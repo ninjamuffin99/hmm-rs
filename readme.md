@@ -11,6 +11,10 @@ In progress and may or may not be completed, I'm stil learning :)
 With [Rust installed](https://www.rust-lang.org/tools/install):
 `cargo install hmm-rs`
 
+or directly from git:
+
+`cargo install --git https://github.com/ninjamuffin99/hmm-rs hmm-rs`
+
 ## TODO List
 
 - [x] Read a hmm.json
