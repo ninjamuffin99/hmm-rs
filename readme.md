@@ -27,13 +27,16 @@ or directly from git:
   - [ ] Linux Build
   - [ ] Mac Build
   - [ ] Github Releases
+- [x] Help info for commands
+- [ ] Create tests against haxe `hmm`
 
 ### hmm commands to implement
 
 - [x] list
-- [ ] init - initializes the current working directory for hmm usage
-  - create `hmm.json` and an empty `.haxelib` folder
-- [ ] help - prints help / command info
+- [x] init - initializes the current working directory for hmm usage
+  - [x] create `hmm.json` and an empty `.haxelib` folder
+  - [ ] read from .haxelib/ folder
+- [x] help - prints help / command info
 - [ ] version - prints hmm version
 - [ ] install - installs libraries listed in hmm.json
 - [ ] from-hxml

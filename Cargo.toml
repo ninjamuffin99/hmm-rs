@@ -3,7 +3,7 @@ name = "hmm-rs"
 version = "0.0.1"
 edition = "2021"
 authors = ["ninjamuffin99"]
-description = "Managing haxelibs via Haxe Module Manager, in Rust"
+description = "Managing haxelibs via Haxe Module Manager, in Rust 🦀"
 repository = "https://github.com/ninjamuffin99/hmm-rs"
 keywords = ["haxe", "haxelib", "hmm"]
 license = "MIT OR Apache-2.0"
@@ -12,8 +12,8 @@ license = "MIT OR Apache-2.0"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-clap = { version = "4.5.4", features = ["derive"] }
-serde = {version = "1.0.197", features = ["derive"]}
+clap = { version = "4.5.4", features = ["derive", "unicode", "wrap_help"] }
+serde = { version = "1.0.197", features = ["derive"] }
 serde_json = "1.0.115"
 
 [[bin]]

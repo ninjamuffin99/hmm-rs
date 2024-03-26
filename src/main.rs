@@ -16,10 +16,13 @@ struct Args {
 
 #[derive(Subcommand, Debug, Clone)]
 enum Commands {
+    /// Lists the dependencies in the hmm.json file (or a file of your choice with --path)
     List {
         #[arg(short, long)]
-        path: Option<PathBuf>,
+        #[arg(default_value_t = String::from("hmm.json"))]
+        path: String,
     },
+    /// Creates an empty .haxelib/ folder, and an empty hmm.json file
     Init,
 }
 
@@ -111,12 +114,9 @@ fn match_commands() {
     let args = Args::parse();
     match args.cmd {
         Commands::List { path } => {
-            let file_to_open = match path {
-                Some(dir_path) => dir_path,
-                None => "hmm.json".into(),
-            };
+            let file_to_open = path;
 
-            match read_json(file_to_open.to_str().unwrap()) {
+            match read_json(file_to_open.as_str()) {
                 Ok(dep_read) => {
                     dep_read.print_string_list();
                 }
