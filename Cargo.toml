@@ -18,3 +18,7 @@ serde_json = "1.0.115"
 
 [[bin]]
 name = "hmm-rs"
+
+[profile.release]
+strip = true
+lto = true
