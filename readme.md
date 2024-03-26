@@ -1,6 +1,6 @@
 # hmm-rs
 
-A Rust implementation of Haxe Module Manager (`hmm`)
+A Rust implementation of Haxe Module Manager ([`hmm`](https://github.com/andywhite37/hmm))
 
 In progress and may or may not be completed, I'm stil learning :)
 
