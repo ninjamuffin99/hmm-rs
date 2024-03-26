@@ -31,9 +31,10 @@ or directly from git:
 ### hmm commands to implement
 
 - [x] list
+- [ ] init - initializes the current working directory for hmm usage
+  - create `hmm.json` and an empty `.haxelib` folder
 - [ ] help - prints help / command info
 - [ ] version - prints hmm version
-- [ ] init - initializes the current working directory for hmm usage
 - [ ] install - installs libraries listed in hmm.json
 - [ ] from-hxml
 - [ ] to-hxml

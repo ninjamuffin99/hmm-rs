@@ -4,6 +4,7 @@ use serde_json::Result;
 use std::fmt;
 use std::fs::File;
 use std::io::prelude::*;
+use std::path::Path;
 use std::path::PathBuf;
 
 #[derive(Parser, Debug)]
@@ -19,6 +20,7 @@ enum Commands {
         #[arg(short, long)]
         path: Option<PathBuf>,
     },
+    Init,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -121,7 +123,31 @@ fn match_commands() {
                 _ => {}
             }
         }
+        Commands::Init => {
+            create_haxelib_folder();
+            create_empty_hmm_json();
+        }
+        _ => {
+            println!("Command not implemented yet.")
+        }
     }
+}
+
+fn create_haxelib_folder() {
+    let haxelib_path = Path::new(".haxelib");
+    if haxelib_path.exists() {
+        println!("Folder .haxelib already exists");
+        return;
+    }
+    std::fs::create_dir(haxelib_path).unwrap();
+}
+
+fn create_empty_hmm_json() {
+    let empty_deps = Dependancies {
+        dependencies: vec![],
+    };
+
+    save_json(empty_deps, "hmm.json").unwrap();
 }
 
 fn read_json(path: &str) -> std::io::Result<Dependancies> {
