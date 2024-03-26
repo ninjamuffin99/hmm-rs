@@ -1,7 +1,13 @@
 [package]
 name = "hmm-rs"
-version = "0.1.0"
+version = "0.0.1"
 edition = "2021"
+authors = ["ninjamuffin99"]
+description = "Managing haxelibs via Haxe Module Manager, in Rust"
+repository = "https://github.com/ninjamuffin99/hmm-rs"
+keywords = ["haxe", "haxelib", "hmm"]
+license = "MIT OR Apache-2.0"
+
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
