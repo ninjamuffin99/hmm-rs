@@ -1,4 +1,5 @@
 use clap::{Parser, Subcommand};
+use console::Emoji;
 use serde::{Deserialize, Serialize};
 use serde_json::Result;
 use std::fmt;
@@ -6,6 +7,7 @@ use std::fs::File;
 use std::io::prelude::*;
 use std::path::Path;
 use std::path::PathBuf;
+use yansi::Paint;
 
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
@@ -28,6 +30,8 @@ enum Commands {
     Clean,
     /// dumps the dependencies in hmm.json to a hxml file
     ToHxml,
+    /// Checks if the dependencies are installed at their correct hmm.json versions
+    Check,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -133,9 +137,66 @@ fn match_commands() {
         }
         Commands::Clean => remove_haxelib_folder(),
         Commands::ToHxml => dump_to_hxml(),
+        Commands::Check => compare_haxelib_to_hmm(),
         _ => {
             println!("Command not implemented yet.")
         }
+    }
+}
+
+fn compare_haxelib_to_hmm() {
+    let deps = read_json("hmm.json").unwrap();
+
+    for haxelib in deps.dependencies.iter() {
+        // Haxelib folders replace . with , in the folder name
+
+        let comma_replace = haxelib.name.replace(".", ",");
+        let haxelib_path = Path::new(".haxelib").join(comma_replace.as_str());
+
+        // assumes an error will occur, and if not, this line will be rewritten at the end of the for loop
+        println!("{} {}", haxelib.name.bold().red(), Emoji("❌", "[X]"));
+        if !haxelib_path.exists() {
+            println!("{} not installed", haxelib.name.bold().red());
+            continue;
+        }
+
+        // Read the .current file
+        let current_file = match haxelib_path.join(".dev").exists() {
+            true => haxelib_path.join(".dev"),
+            false => haxelib_path.join(".current"),
+        };
+        // println!("Checking version at {}", current_file.display());
+        let mut current_version = String::new();
+        File::read_to_string(&mut File::open(current_file).unwrap(), &mut current_version).unwrap();
+        // println!("Current version: {}", current_version);
+
+        match haxelib.haxelib_type.as_str() {
+            "haxelib" => {
+                if haxelib.version.as_ref().unwrap() != &current_version {
+                    println!(
+                        "{} {}",
+                        haxelib.name.red().bold(),
+                        "is not at the correct version".red()
+                    );
+                    println!(
+                        "Expected: {} | Installed: {}",
+                        haxelib.version.as_ref().unwrap().red(),
+                        current_version.red()
+                    );
+                    continue;
+                }
+            }
+            _ => {}
+        }
+
+        let inner = format!(
+            "{}: {} {}",
+            haxelib.name.green().bold(),
+            current_version.bright_green(),
+            Emoji("✅", "[✔️]")
+        );
+        print!("\x1B[1A\x1B[2K{}", inner.bright_green().wrap());
+        println!();
     }
 }
 
