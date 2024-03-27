@@ -1,5 +1,7 @@
 use clap::{Parser, Subcommand};
 use console::Emoji;
+// use gix::prelude::*;
+// use gix::Repository;
 use serde::{Deserialize, Serialize};
 use serde_json::Result;
 use std::fmt;
@@ -186,12 +188,58 @@ fn compare_haxelib_to_hmm() {
                     continue;
                 }
             }
+            "git" => {
+                let repo_path = haxelib_path.join("git");
+                let repo = gix::discover(repo_path).unwrap();
+                let head_ref = repo.head_id().unwrap();
+                let head_ref_string = head_ref.to_string();
+
+                current_version = head_ref_string.clone();
+
+                let branch_name = match repo.head_name().unwrap() {
+                    Some(h) => {
+                        current_version = h.shorten().to_string();
+                        h.shorten().to_string()
+                    }
+                    None => String::new(),
+                };
+
+                if haxelib.vcs_ref.as_ref().unwrap() != &head_ref_string
+                    && haxelib.vcs_ref.as_ref().unwrap() != &branch_name
+                {
+                    println!(
+                        "{} {}",
+                        haxelib.name.red().bold(),
+                        "is not at the correct version".red()
+                    );
+
+                    let mut output = String::new();
+
+                    // if branch_name is empty, then it's a detached head/specific commit
+                    match branch_name.as_str() {
+                        "" => {
+                            output.push_str(&head_ref_string);
+                        }
+                        _ => {
+                            output.push_str(&branch_name);
+                        }
+                    }
+
+                    println!(
+                        "Expected: {} | Installed: {}",
+                        haxelib.vcs_ref.as_ref().unwrap().red(),
+                        output.red()
+                    );
+                    continue;
+                }
+            }
             _ => {}
         }
 
         let inner = format!(
-            "{}: {} {}",
+            "{} [{}]: {} {}",
             haxelib.name.green().bold(),
+            haxelib.haxelib_type.green().bold(),
             current_version.bright_green(),
             Emoji("✅", "[✔️]")
         );
