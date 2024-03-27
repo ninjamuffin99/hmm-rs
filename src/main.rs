@@ -24,6 +24,10 @@ enum Commands {
     },
     /// Creates an empty .haxelib/ folder, and an empty hmm.json file
     Init,
+    /// Removes local .haxelib directory, useful for full clean reinstalls
+    Clean,
+    /// dumps the dependencies in hmm.json to a hxml file
+    ToHxml,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -127,10 +131,38 @@ fn match_commands() {
             create_haxelib_folder();
             create_empty_hmm_json();
         }
+        Commands::Clean => remove_haxelib_folder(),
+        Commands::ToHxml => dump_to_hxml(),
         _ => {
             println!("Command not implemented yet.")
         }
     }
+}
+
+fn dump_to_hxml() {
+    let deps = read_json("hmm.json").unwrap();
+    let mut hxml = String::new();
+    for haxelib in deps.dependencies.iter() {
+        let mut lib_string = String::from("-lib ");
+        lib_string.push_str(haxelib.name.as_str());
+
+        match haxelib.haxelib_type.as_str() {
+            "git" => {
+                lib_string
+                    .push_str(format!(":git:{}", &haxelib.url.as_ref().unwrap().as_str()).as_str());
+                match &haxelib.vcs_ref {
+                    Some(r) => lib_string.push_str(format!("#{}", r).as_str()),
+                    _ => {}
+                }
+            }
+            "haxelib" => lib_string
+                .push_str(format!(":{}", haxelib.version.as_ref().unwrap().as_str()).as_str()),
+            _ => {}
+        }
+        hxml.push_str(&lib_string);
+        hxml.push_str("\n");
+    }
+    println!("{}", hxml);
 }
 
 fn create_haxelib_folder() {
@@ -139,7 +171,18 @@ fn create_haxelib_folder() {
         println!("Folder .haxelib already exists");
         return;
     }
+    println!("Creating .haxelib/ folder");
     std::fs::create_dir(haxelib_path).unwrap();
+}
+
+fn remove_haxelib_folder() {
+    let haxelib_path = Path::new(".haxelib");
+    if !haxelib_path.exists() {
+        println!("Folder .haxelib does not exist");
+        return;
+    }
+    println!("Removing .haxelib/ folder");
+    std::fs::remove_dir_all(haxelib_path).unwrap();
 }
 
 fn create_empty_hmm_json() {

@@ -40,7 +40,7 @@ or directly from git:
 - [ ] version - prints hmm version
 - [ ] install - installs libraries listed in hmm.json
 - [ ] from-hxml
-- [ ] to-hxml
+- [x] to-hxml
 - [ ] reinstall
 - [ ] setup
 - [ ] haxelib
@@ -51,6 +51,6 @@ or directly from git:
 - [ ] remove
 - [ ] lock
 - [ ] check
-- [ ] clean
+- [x] clean
 - [ ] hmm-update
 - [ ] hmm-remove
