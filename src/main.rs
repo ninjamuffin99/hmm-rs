@@ -57,7 +57,7 @@ struct Dependancies {
 struct Haxelib {
     name: String,
     #[serde(rename = "type")]
-    haxelib_type: String,
+    haxelib_type: HaxelibType,
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(rename = "ref")]
     vcs_ref: Option<String>,
@@ -66,6 +66,14 @@ struct Haxelib {
     url: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     version: Option<String>,
+}
+
+#[derive(Serialize, Deserialize, Debug, PartialEq)]
+enum HaxelibType {
+    #[serde(rename = "git")]
+    Git,
+    #[serde(rename = "haxelib")]
+    Haxelib,
 }
 
 impl fmt::Display for Dependancies {
@@ -86,18 +94,18 @@ impl Dependancies {
             };
 
             let mut haxelib_output = format!(
-                "{} [{haxelib_type}] \n{} \n",
+                "{} [{haxelib_type:?}] \n{} \n",
                 haxelib.name,
                 version_or_ref,
                 haxelib_type = haxelib.haxelib_type
             );
 
-            match haxelib.haxelib_type.as_str() {
-                "git" => match &haxelib.url {
+            match haxelib.haxelib_type {
+                HaxelibType::Git => match &haxelib.url {
                     Some(u) => haxelib_output.push_str(&format!("url: {}\n", u)),
                     None => {}
                 },
-                "haxelib" => {
+                HaxelibType::Haxelib => {
                     let haxelib_url = format!("https://lib.haxe.org/p/{}", haxelib.name);
                     haxelib_output.push_str(&format!("url: {}\n", haxelib_url))
                 }
@@ -164,7 +172,7 @@ async fn install_from_hmm() -> Result<()> {
     let deps = read_json("hmm.json").unwrap();
 
     for haxelib in deps.dependencies.iter() {
-        if haxelib.haxelib_type.as_str() == "git" {
+        if haxelib.haxelib_type == HaxelibType::Git {
             continue;
         }
 
@@ -252,8 +260,8 @@ fn compare_haxelib_to_hmm() {
         File::read_to_string(&mut File::open(current_file).unwrap(), &mut current_version).unwrap();
         // println!("Current version: {}", current_version);
 
-        match haxelib.haxelib_type.as_str() {
-            "haxelib" => {
+        match haxelib.haxelib_type {
+            HaxelibType::Haxelib => {
                 if haxelib.version.as_ref().unwrap() != &current_version {
                     println!(
                         "{} {}",
@@ -268,7 +276,7 @@ fn compare_haxelib_to_hmm() {
                     continue;
                 }
             }
-            "git" => {
+            HaxelibType::Git => {
                 let repo_path = haxelib_path.join("git");
                 let repo = gix::discover(repo_path).unwrap();
                 let head_ref = repo.head_id().unwrap();
@@ -317,7 +325,7 @@ fn compare_haxelib_to_hmm() {
         }
 
         let inner = format!(
-            "{} [{}]: {} {}",
+            "{} [{:?}]: {} {}",
             haxelib.name.green().bold(),
             haxelib.haxelib_type.green().bold(),
             current_version.bright_green(),
@@ -335,8 +343,8 @@ fn dump_to_hxml() {
         let mut lib_string = String::from("-lib ");
         lib_string.push_str(haxelib.name.as_str());
 
-        match haxelib.haxelib_type.as_str() {
-            "git" => {
+        match haxelib.haxelib_type {
+            HaxelibType::Git => {
                 lib_string
                     .push_str(format!(":git:{}", &haxelib.url.as_ref().unwrap().as_str()).as_str());
                 match &haxelib.vcs_ref {
@@ -344,7 +352,7 @@ fn dump_to_hxml() {
                     _ => {}
                 }
             }
-            "haxelib" => lib_string
+            HaxelibType::Haxelib => lib_string
                 .push_str(format!(":{}", haxelib.version.as_ref().unwrap().as_str()).as_str()),
             _ => {}
         }
@@ -405,7 +413,7 @@ fn save_json(deps: Dependancies, path: &str) -> std::io::Result<()> {
 fn print_flixel_haxelib() -> Result<Dependancies> {
     let haxelib = Haxelib {
         name: String::from("flixel"),
-        haxelib_type: String::from("git"),
+        haxelib_type: HaxelibType::Git,
         vcs_ref: Option::Some(String::from("master")),
         dir: Option::None,
         url: Option::Some(String::from("https://github.com/haxeflixel/flixel")),

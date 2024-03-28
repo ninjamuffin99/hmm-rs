@@ -17,11 +17,10 @@ or directly from git:
 
 ## TODO List
 
-- [x] Read a hmm.json
-- [x] Implement clap crate
 - [ ] Install Haxelibs from Git
 - [ ] Install haxelibs from haxelib (lib.haxe.org)
 - [ ] Download to `.haxelib/` folder
+- [ ] Organize code so it's not just main.rs lol!
 - [ ] Github actions
   - [ ] Windows Build
   - [ ] Linux Build
