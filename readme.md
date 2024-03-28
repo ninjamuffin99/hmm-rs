@@ -50,7 +50,7 @@ or directly from git:
 - [ ] update
 - [ ] remove
 - [ ] lock
-- [ ] check
+- [x] check
 - [x] clean
 - [ ] hmm-update
 - [ ] hmm-remove
