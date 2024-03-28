@@ -2,14 +2,24 @@ use clap::{Parser, Subcommand};
 use console::Emoji;
 // use gix::prelude::*;
 // use gix::Repository;
+use error_chain::error_chain;
+use futures_util::StreamExt;
+use indicatif::{ProgressBar, ProgressStyle};
 use serde::{Deserialize, Serialize};
-use serde_json::Result;
 use std::fmt;
 use std::fs::File;
 use std::io::prelude::*;
 use std::path::Path;
 use std::path::PathBuf;
+use tempfile::Builder;
 use yansi::Paint;
+
+error_chain! {
+    foreign_links {
+        Io(std::io::Error);
+        HttpRequest(reqwest::Error);
+    }
+}
 
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
@@ -34,6 +44,8 @@ enum Commands {
     ToHxml,
     /// Checks if the dependencies are installed at their correct hmm.json versions
     Check,
+    /// Installs the dependencies from hmm.json, if they aren't already installed.
+    Install,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -140,10 +152,78 @@ fn match_commands() {
         Commands::Clean => remove_haxelib_folder(),
         Commands::ToHxml => dump_to_hxml(),
         Commands::Check => compare_haxelib_to_hmm(),
+        Commands::Install => install_from_hmm().unwrap(),
         _ => {
             println!("Command not implemented yet.")
         }
     }
+}
+
+#[tokio::main]
+async fn install_from_hmm() -> Result<()> {
+    let deps = read_json("hmm.json").unwrap();
+
+    for haxelib in deps.dependencies.iter() {
+        if haxelib.haxelib_type.as_str() == "git" {
+            continue;
+        }
+
+        let client = reqwest::Client::new();
+
+        let tmp_dir = Path::new(".haxelib-test").join(format!("{}.zip", haxelib.name));
+
+        // braindead...
+        let mut target_url = String::from("https://lib.haxe.org/p/");
+        target_url.push_str(haxelib.name.as_str());
+        target_url.push_str("/");
+        target_url.push_str(haxelib.version.as_ref().unwrap().as_str());
+        target_url.push_str("/");
+        target_url.push_str("download");
+
+        let response = client.get(target_url).send().await?;
+
+        let total_size = response.content_length().unwrap();
+
+        // yoinked from haxeget !
+        let pb = ProgressBar::new(total_size);
+        pb.set_style(ProgressStyle::with_template("{msg}\n{spinner:.green} [{elapsed_precise}] [{wide_bar:.yellow/red}] {bytes}/{total_bytes} ({bytes_per_sec}, {eta})")
+                 .unwrap());
+
+        let mut file = File::create(tmp_dir)?;
+        let mut downloaded: u64 = 0;
+        let mut stream = response.bytes_stream();
+
+        while let Some(item) = stream.next().await {
+            let chunk = item.unwrap();
+            file.write_all(&chunk).unwrap();
+            let new = std::cmp::min(downloaded + (chunk.len() as u64), total_size);
+            downloaded = new;
+            pb.set_position(new);
+        }
+
+        let finish_message = format!(
+            "{}:{} done downloading from Haxelib 🎉",
+            haxelib.name.green().bold(),
+            haxelib.version.as_ref().unwrap().bright_green()
+        );
+        pb.finish_with_message(finish_message);
+
+        // let mut dest = {
+        //     let fname = response
+        //         .url()
+        //         .path_segments()
+        //         .and_then(|segments| segments.last())
+        //         .and_then(|name| if name.is_empty() { None } else { Some(name) })
+        //         .unwrap_or("tmp.bin");
+
+        //     println!("file to download: '{}'", fname);
+        //     let fname = tmp_dir.path().join(fname);
+        //     println!("will be located under: '{:?}'", fname);
+        //     File::create(fname)?
+        // };
+    }
+
+    Ok(())
 }
 
 fn compare_haxelib_to_hmm() {
