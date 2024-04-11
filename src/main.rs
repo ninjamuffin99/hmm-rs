@@ -26,6 +26,7 @@ struct Args {
 #[derive(Subcommand, Debug, Clone)]
 enum Commands {
     /// Lists the dependencies in the hmm.json file (or a file of your choice with --path)
+    /// use `hmm-rs check` to see if the dependencies are installed at the correct versions
     List {
         #[arg(short, long)]
         #[arg(default_value_t = String::from("hmm.json"))]
@@ -114,29 +115,6 @@ impl Dependancies {
 }
 
 fn main() -> Result<()> {
-    // println!("Hello, world!");
-
-    match_commands()
-
-    // let dep = print_flixel_haxelib().unwrap();
-    // println!("{}", dep.to_string());
-    // save_json(dep, "samples/flixel.json").unwrap();
-
-    // match read_json("samples/hmm.json") {
-    //     Ok(dep_read) => {
-    //         println!("Read: {}", dep_read.to_string());
-    //     },
-    //     Err(e) => {
-    //         println!("Error: {:?}", e);
-    //     }
-    // }
-
-    // let dep_read = read_json("samples/hmm.json").unwrap();
-    // let k = serde_json::to_string(&dep_read).unwrap();
-    // println!("{}", k);
-}
-
-fn match_commands() -> Result<()> {
     let args = Args::parse();
     match args.cmd {
         Commands::List { path } => {
@@ -150,7 +128,13 @@ fn match_commands() -> Result<()> {
         }
         Commands::Clean => remove_haxelib_folder()?,
         Commands::ToHxml => dump_to_hxml()?,
-        Commands::Check => compare_haxelib_to_hmm()?,
+        Commands::Check => match compare_haxelib_to_hmm()? {
+            0 => println!("All dependencies are installed at their proper versions"),
+            installs => println!(
+                "{} dependencie(s) are installed at incorrect versions",
+                installs
+            ),
+        },
         Commands::Install => install_from_hmm()?,
     }
     Ok(())
@@ -223,8 +207,10 @@ async fn install_from_hmm() -> Result<()> {
     Ok(())
 }
 
-fn compare_haxelib_to_hmm() -> Result<()> {
+fn compare_haxelib_to_hmm() -> Result<u32> {
     let deps = read_json("hmm.json")?;
+
+    let mut incorrect_installs = 0;
 
     for haxelib in deps.dependencies.iter() {
         // Haxelib folders replace . with , in the folder name
@@ -236,6 +222,7 @@ fn compare_haxelib_to_hmm() -> Result<()> {
         println!("{} {}", haxelib.name.bold().red(), Emoji("❌", "[X]"));
         if !haxelib_path.exists() {
             println!("{} not installed", haxelib.name.bold().red());
+            incorrect_installs += 1;
             continue;
         }
 
@@ -265,6 +252,8 @@ fn compare_haxelib_to_hmm() -> Result<()> {
                         haxelib.version.as_ref().unwrap().red(),
                         current_version.red()
                     );
+
+                    incorrect_installs += 1;
                     continue;
                 }
             }
@@ -311,6 +300,8 @@ fn compare_haxelib_to_hmm() -> Result<()> {
                         haxelib.vcs_ref.as_ref().unwrap().red(),
                         output.red()
                     );
+
+                    incorrect_installs += 1;
                     continue;
                 }
             }
@@ -327,7 +318,7 @@ fn compare_haxelib_to_hmm() -> Result<()> {
         print!("\x1B[1A\x1B[2K{}", inner.bright_green().wrap());
         println!();
     }
-    Ok(())
+    Ok(incorrect_installs)
 }
 
 fn dump_to_hxml() -> Result<()> {
