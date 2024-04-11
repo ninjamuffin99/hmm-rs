@@ -38,6 +38,9 @@ or directly from git:
 - [x] help - prints help / command info
 - [ ] version - prints hmm version
 - [ ] install - installs libraries listed in hmm.json
+  - [ ] haxelib
+  - [ ] git
+  - [ ] check if version is already installed
 - [ ] from-hxml
 - [x] to-hxml
 - [ ] reinstall
