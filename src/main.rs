@@ -145,7 +145,7 @@ fn match_commands() -> Result<()> {
             dep_read.print_string_list()?
         }
         Commands::Init => {
-            create_haxelib_folder();
+            create_haxelib_folder()?;
             create_empty_hmm_json()?
         }
         Commands::Clean => remove_haxelib_folder()?,
