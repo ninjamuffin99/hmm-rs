@@ -1,9 +1,11 @@
+use anyhow::Ok;
 use clap::{Parser, Subcommand};
 use console::Emoji;
 // use gix::prelude::*;
 // use gix::Repository;
-use error_chain::error_chain;
+use anyhow::{anyhow, Context, Result};
 use futures_util::StreamExt;
+use gix::date::time::format;
 use indicatif::{ProgressBar, ProgressStyle};
 use serde::{Deserialize, Serialize};
 use std::fmt;
@@ -13,13 +15,6 @@ use std::path::Path;
 use std::path::PathBuf;
 use tempfile::Builder;
 use yansi::Paint;
-
-error_chain! {
-    foreign_links {
-        Io(std::io::Error);
-        HttpRequest(reqwest::Error);
-    }
-}
 
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
@@ -83,7 +78,7 @@ impl fmt::Display for Dependancies {
 }
 
 impl Dependancies {
-    fn print_string_list(&self) {
+    fn print_string_list(&self) -> Result<()> {
         for haxelib in self.dependencies.iter() {
             let version_or_ref = match &haxelib.version {
                 Some(v) => format!("version: {}", v),
@@ -114,13 +109,14 @@ impl Dependancies {
 
             println!("{}", haxelib_output);
         }
+        Ok(())
     }
 }
 
-fn main() {
+fn main() -> Result<()> {
     // println!("Hello, world!");
 
-    match_commands();
+    match_commands()
 
     // let dep = print_flixel_haxelib().unwrap();
     // println!("{}", dep.to_string());
@@ -140,36 +136,29 @@ fn main() {
     // println!("{}", k);
 }
 
-fn match_commands() {
+fn match_commands() -> Result<()> {
     let args = Args::parse();
     match args.cmd {
         Commands::List { path } => {
             let file_to_open = path;
-
-            match read_json(file_to_open.as_str()) {
-                Ok(dep_read) => {
-                    dep_read.print_string_list();
-                }
-                _ => {}
-            }
+            let dep_read = read_json(file_to_open.as_str())?;
+            dep_read.print_string_list()?
         }
         Commands::Init => {
             create_haxelib_folder();
-            create_empty_hmm_json();
+            create_empty_hmm_json()?
         }
-        Commands::Clean => remove_haxelib_folder(),
-        Commands::ToHxml => dump_to_hxml(),
-        Commands::Check => compare_haxelib_to_hmm(),
-        Commands::Install => install_from_hmm().unwrap(),
-        _ => {
-            println!("Command not implemented yet.")
-        }
+        Commands::Clean => remove_haxelib_folder()?,
+        Commands::ToHxml => dump_to_hxml()?,
+        Commands::Check => compare_haxelib_to_hmm()?,
+        Commands::Install => install_from_hmm()?,
     }
+    Ok(())
 }
 
 #[tokio::main]
 async fn install_from_hmm() -> Result<()> {
-    let deps = read_json("hmm.json").unwrap();
+    let deps = read_json("hmm.json")?;
 
     for haxelib in deps.dependencies.iter() {
         if haxelib.haxelib_type == HaxelibType::Git {
@@ -234,8 +223,8 @@ async fn install_from_hmm() -> Result<()> {
     Ok(())
 }
 
-fn compare_haxelib_to_hmm() {
-    let deps = read_json("hmm.json").unwrap();
+fn compare_haxelib_to_hmm() -> Result<()> {
+    let deps = read_json("hmm.json")?;
 
     for haxelib in deps.dependencies.iter() {
         // Haxelib folders replace . with , in the folder name
@@ -257,7 +246,10 @@ fn compare_haxelib_to_hmm() {
         };
         // println!("Checking version at {}", current_file.display());
         let mut current_version = String::new();
-        File::read_to_string(&mut File::open(current_file).unwrap(), &mut current_version).unwrap();
+        File::read_to_string(
+            &mut File::open(&current_file).context(anyhow!("Could not open {:?}", current_file))?,
+            &mut current_version,
+        )?;
         // println!("Current version: {}", current_version);
 
         match haxelib.haxelib_type {
@@ -278,13 +270,14 @@ fn compare_haxelib_to_hmm() {
             }
             HaxelibType::Git => {
                 let repo_path = haxelib_path.join("git");
-                let repo = gix::discover(repo_path).unwrap();
-                let head_ref = repo.head_id().unwrap();
+                let repo = gix::discover(&repo_path)
+                    .context(anyhow!("Could not find git repo {:?}", repo_path))?;
+                let head_ref = repo.head_id()?;
                 let head_ref_string = head_ref.to_string();
 
                 current_version = head_ref_string.clone();
 
-                let branch_name = match repo.head_name().unwrap() {
+                let branch_name = match repo.head_name()? {
                     Some(h) => {
                         current_version = h.shorten().to_string();
                         h.shorten().to_string()
@@ -334,10 +327,11 @@ fn compare_haxelib_to_hmm() {
         print!("\x1B[1A\x1B[2K{}", inner.bright_green().wrap());
         println!();
     }
+    Ok(())
 }
 
-fn dump_to_hxml() {
-    let deps = read_json("hmm.json").unwrap();
+fn dump_to_hxml() -> Result<()> {
+    let deps = read_json("hmm.json")?;
     let mut hxml = String::new();
     for haxelib in deps.dependencies.iter() {
         let mut lib_string = String::from("-lib ");
@@ -360,49 +354,51 @@ fn dump_to_hxml() {
         hxml.push_str("\n");
     }
     println!("{}", hxml);
+    Ok(())
 }
 
-fn create_haxelib_folder() {
+fn create_haxelib_folder() -> Result<()> {
     let haxelib_path = Path::new(".haxelib");
     if haxelib_path.exists() {
-        println!("Folder .haxelib already exists");
-        return;
+        let err_message = format!(
+            "{} \n{}",
+            "A .haxelib folder already exists in this directory, so it won't be created.",
+            "use `hmm-rs clean` to remove the folder"
+        );
+        Err(anyhow!(err_message))?
     }
     println!("Creating .haxelib/ folder");
-    std::fs::create_dir(haxelib_path).unwrap();
+    std::fs::create_dir(haxelib_path).context("Failed to create .haxelib folder")
 }
 
-fn remove_haxelib_folder() {
+fn remove_haxelib_folder() -> Result<()> {
     let haxelib_path = Path::new(".haxelib");
     if !haxelib_path.exists() {
-        println!("Folder .haxelib does not exist");
-        return;
+        Err(anyhow!(
+            "A .haxelib folder does not exist in this directory, so it cannot be removed."
+                .bright_red()
+                .bold()
+        ))?
     }
     println!("Removing .haxelib/ folder");
-    std::fs::remove_dir_all(haxelib_path).unwrap();
+    std::fs::remove_dir_all(haxelib_path).context("Failed to remove .haxelib folder")
 }
 
-fn create_empty_hmm_json() {
+fn create_empty_hmm_json() -> Result<()> {
     let empty_deps = Dependancies {
         dependencies: vec![],
     };
 
-    save_json(empty_deps, "hmm.json").unwrap();
+    save_json(empty_deps, "hmm.json")
 }
 
-fn read_json(path: &str) -> std::io::Result<Dependancies> {
-    let file = match File::open(path) {
-        Ok(file) => file,
-        Err(e) => {
-            println!("Error: {:?} not found", path);
-            return Err(e);
-        }
-    };
+fn read_json(path: &str) -> Result<Dependancies> {
+    let file = File::open(path).context(format!("JSON {:?} not found", path))?;
     let deps: Dependancies = serde_json::from_reader(file)?;
     Ok(deps)
 }
 
-fn save_json(deps: Dependancies, path: &str) -> std::io::Result<()> {
+fn save_json(deps: Dependancies, path: &str) -> Result<()> {
     println!("Saving to {}", path);
     let j = serde_json::to_string_pretty(&deps)?;
     let mut file = File::create(path)?;
