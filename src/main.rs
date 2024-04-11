@@ -6,8 +6,11 @@ use console::Emoji;
 use anyhow::{anyhow, Context, Result};
 use futures_util::StreamExt;
 use gix::date::time::format;
+use gix::odb::pack::multi_index::chunk::index_names::write;
+use human_bytes::human_bytes;
 use indicatif::{ProgressBar, ProgressStyle};
 use serde::{Deserialize, Serialize};
+use std::env;
 use std::fmt;
 use std::fs::File;
 use std::io::prelude::*;
@@ -15,6 +18,7 @@ use std::path::Path;
 use std::path::PathBuf;
 use tempfile::Builder;
 use yansi::Paint;
+use zip::ZipArchive;
 
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
@@ -149,10 +153,6 @@ async fn install_from_hmm() -> Result<()> {
             continue;
         }
 
-        let client = reqwest::Client::new();
-
-        let tmp_dir = Path::new(".haxelib-test").join(format!("{}.zip", haxelib.name));
-
         // braindead...
         let mut target_url = String::from("https://lib.haxe.org/p/");
         target_url.push_str(haxelib.name.as_str());
@@ -161,16 +161,27 @@ async fn install_from_hmm() -> Result<()> {
         target_url.push_str("/");
         target_url.push_str("download");
 
+        println!(
+            "Downloading: {} - {} - {}",
+            haxelib.name.bold(),
+            "lib.haxe.org".yellow().bold(),
+            target_url.bold()
+        );
+
+        let client = reqwest::Client::new();
+
+        let tmp_dir = env::temp_dir().join(format!("{}.zip", haxelib.name));
+        println!("Temp directory: {:?}", tmp_dir.bold());
+
         let response = client.get(target_url).send().await?;
-
         let total_size = response.content_length().unwrap();
-
+        println!("Size: {}", human_bytes(total_size as f64));
         // yoinked from haxeget !
         let pb = ProgressBar::new(total_size);
         pb.set_style(ProgressStyle::with_template("{msg}\n{spinner:.green} [{elapsed_precise}] [{wide_bar:.yellow/red}] {bytes}/{total_bytes} ({bytes_per_sec}, {eta})")
                  .unwrap());
 
-        let mut file = File::create(tmp_dir)?;
+        let mut file = File::create(tmp_dir.as_path())?;
         let mut downloaded: u64 = 0;
         let mut stream = response.bytes_stream();
 
@@ -183,25 +194,46 @@ async fn install_from_hmm() -> Result<()> {
         }
 
         let finish_message = format!(
-            "{}:{} done downloading from Haxelib 🎉",
+            "{}:{} done downloading from {} 🎉",
             haxelib.name.green().bold(),
-            haxelib.version.as_ref().unwrap().bright_green()
+            haxelib.version.as_ref().unwrap().bright_green(),
+            "Haxelib".yellow().bold()
         );
-        pb.finish_with_message(finish_message);
+        pb.finish_and_clear();
+        println!("{}", finish_message);
 
-        // let mut dest = {
-        //     let fname = response
-        //         .url()
-        //         .path_segments()
-        //         .and_then(|segments| segments.last())
-        //         .and_then(|name| if name.is_empty() { None } else { Some(name) })
-        //         .unwrap_or("tmp.bin");
+        let version_as_commas = haxelib.version.as_ref().unwrap().replace(".", ",");
+        let mut output_dir: PathBuf = [".haxelib", haxelib.name.as_str()].iter().collect();
 
-        //     println!("file to download: '{}'", fname);
-        //     let fname = tmp_dir.path().join(fname);
-        //     println!("will be located under: '{:?}'", fname);
-        //     File::create(fname)?
-        // };
+        // .current file
+        println!(
+            "Writing .current file to version: {:?}",
+            haxelib.version.as_ref().unwrap().as_str()
+        );
+
+        let mut current_version_file = File::create(&output_dir.join(".current"))?;
+        write!(
+            current_version_file,
+            "{}",
+            haxelib.version.as_ref().unwrap()
+        )?;
+
+        // unzipping
+        output_dir = output_dir.join(version_as_commas.as_str());
+        println!("Unzipping to: {:?}", output_dir.as_path());
+
+        let archive = File::open(tmp_dir.as_path())?;
+        let mut zip_file = ZipArchive::new(archive).context("Error opening zip file")?;
+        zip_file
+            .extract(output_dir.as_path())
+            .context("Error extracting zip file")?;
+
+        // removing the zip file
+        print!("Deleting temp file: {:?}", tmp_dir.as_path());
+        std::fs::remove_file(tmp_dir.as_path())?;
+
+        // print an empty line, for readability between downloads
+        println!("");
     }
 
     Ok(())
