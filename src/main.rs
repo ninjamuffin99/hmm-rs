@@ -1,7 +1,9 @@
+pub mod commands;
 pub mod hmm;
 
 use anyhow::Ok;
 use anyhow::{anyhow, Context, Result};
+
 use clap::{Parser, Subcommand};
 use console::Emoji;
 use futures_util::StreamExt;
@@ -11,7 +13,6 @@ use indicatif::{ProgressBar, ProgressStyle};
 use std::env;
 use std::fs::File;
 use std::io::prelude::*;
-use std::path::Path;
 use std::path::PathBuf;
 use yansi::Paint;
 use zip::ZipArchive;
@@ -48,19 +49,10 @@ fn main() -> Result<()> {
     let args = Args::parse();
     match args.cmd {
         Commands::List { path } => hmm::json::read_json(&path)?.print_string_list()?,
-        Commands::Init => {
-            create_haxelib_folder()?;
-            hmm::json::create_empty_hmm_json()?
-        }
-        Commands::Clean => remove_haxelib_folder()?,
-        Commands::ToHxml => dump_to_hxml()?,
-        Commands::Check => match compare_haxelib_to_hmm()? {
-            0 => println!("All dependencies are installed at their proper versions"),
-            installs => println!(
-                "{} dependencie(s) are installed at incorrect versions",
-                installs
-            ),
-        },
+        Commands::Init => commands::init_command::init_hmm()?,
+        Commands::Clean => commands::clean_command::remove_haxelib_folder()?,
+        Commands::ToHxml => commands::tohxml_command::dump_to_hxml()?,
+        Commands::Check => commands::check_command::check()?,
         Commands::Install => install_from_hmm()?,
     }
     Ok(())
@@ -172,172 +164,4 @@ async fn install_from_haxelib(haxelib: &Haxelib) -> Result<()> {
     // print an empty line, for readability between downloads
     println!("");
     Ok(())
-}
-
-fn compare_haxelib_to_hmm() -> Result<u32> {
-    let deps = hmm::json::read_json("hmm.json")?;
-
-    let mut incorrect_installs = 0;
-
-    for haxelib in deps.dependencies.iter() {
-        // Haxelib folders replace . with , in the folder name
-
-        let comma_replace = haxelib.name.replace(".", ",");
-        let haxelib_path = Path::new(".haxelib").join(comma_replace.as_str());
-
-        // assumes an error will occur, and if not, this line will be rewritten at the end of the for loop
-        println!("{} {}", haxelib.name.bold().red(), Emoji("❌", "[X]"));
-        if !haxelib_path.exists() {
-            println!("{} not installed", haxelib.name.bold().red());
-            incorrect_installs += 1;
-            continue;
-        }
-
-        // Read the .current file
-        let current_file = match haxelib_path.join(".dev").exists() {
-            true => haxelib_path.join(".dev"),
-            false => haxelib_path.join(".current"),
-        };
-        // println!("Checking version at {}", current_file.display());
-        let mut current_version = String::new();
-        File::read_to_string(
-            &mut File::open(&current_file).context(anyhow!("Could not open {:?}", current_file))?,
-            &mut current_version,
-        )?;
-        // println!("Current version: {}", current_version);
-
-        match haxelib.haxelib_type {
-            HaxelibType::Haxelib => {
-                if haxelib.version.as_ref().unwrap() != &current_version {
-                    println!(
-                        "{} {}",
-                        haxelib.name.red().bold(),
-                        "is not at the correct version".red()
-                    );
-                    println!(
-                        "Expected: {} | Installed: {}",
-                        haxelib.version.as_ref().unwrap().red(),
-                        current_version.red()
-                    );
-
-                    incorrect_installs += 1;
-                    continue;
-                }
-            }
-            HaxelibType::Git => {
-                let repo_path = haxelib_path.join("git");
-                let repo = gix::discover(&repo_path)
-                    .context(anyhow!("Could not find git repo {:?}", repo_path))?;
-                let head_ref = repo.head_id()?;
-                let head_ref_string = head_ref.to_string();
-
-                current_version = head_ref_string.clone();
-
-                let branch_name = match repo.head_name()? {
-                    Some(h) => {
-                        current_version = h.shorten().to_string();
-                        h.shorten().to_string()
-                    }
-                    None => String::new(),
-                };
-
-                if haxelib.vcs_ref.as_ref().unwrap() != &head_ref_string
-                    && haxelib.vcs_ref.as_ref().unwrap() != &branch_name
-                {
-                    println!(
-                        "{} {}",
-                        haxelib.name.red().bold(),
-                        "is not at the correct version".red()
-                    );
-
-                    let mut output = String::new();
-
-                    // if branch_name is empty, then it's a detached head/specific commit
-                    match branch_name.as_str() {
-                        "" => {
-                            output.push_str(&head_ref_string);
-                        }
-                        _ => {
-                            output.push_str(&branch_name);
-                        }
-                    }
-
-                    println!(
-                        "Expected: {} | Installed: {}",
-                        haxelib.vcs_ref.as_ref().unwrap().red(),
-                        output.red()
-                    );
-
-                    incorrect_installs += 1;
-                    continue;
-                }
-            }
-            _ => {}
-        }
-
-        let inner = format!(
-            "{} [{:?}]: {} {}",
-            haxelib.name.green().bold(),
-            haxelib.haxelib_type.green().bold(),
-            current_version.bright_green(),
-            Emoji("✅", "[✔️]")
-        );
-        print!("\x1B[1A\x1B[2K{}", inner.bright_green().wrap());
-        println!();
-    }
-    Ok(incorrect_installs)
-}
-
-fn dump_to_hxml() -> Result<()> {
-    let deps = hmm::json::read_json("hmm.json")?;
-    let mut hxml = String::new();
-    for haxelib in deps.dependencies.iter() {
-        let mut lib_string = String::from("-lib ");
-        lib_string.push_str(haxelib.name.as_str());
-
-        match haxelib.haxelib_type {
-            HaxelibType::Git => {
-                lib_string
-                    .push_str(format!(":git:{}", &haxelib.url.as_ref().unwrap().as_str()).as_str());
-                match &haxelib.vcs_ref {
-                    Some(r) => lib_string.push_str(format!("#{}", r).as_str()),
-                    _ => {}
-                }
-            }
-            HaxelibType::Haxelib => lib_string
-                .push_str(format!(":{}", haxelib.version.as_ref().unwrap().as_str()).as_str()),
-            _ => {}
-        }
-        hxml.push_str(&lib_string);
-        hxml.push_str("\n");
-    }
-    println!("{}", hxml);
-    Ok(())
-}
-
-fn create_haxelib_folder() -> Result<()> {
-    let haxelib_path = Path::new(".haxelib");
-    if haxelib_path.exists() {
-        let err_message = format!(
-            "{} \n{}",
-            "A .haxelib folder already exists in this directory, so it won't be created.",
-            "use `hmm-rs clean` to remove the folder"
-        );
-        Err(anyhow!(err_message))?
-    }
-    println!("Creating .haxelib/ folder");
-    std::fs::create_dir(haxelib_path).context("Failed to create .haxelib folder")
-}
-
-fn remove_haxelib_folder() -> Result<()> {
-    let haxelib_path = Path::new(".haxelib");
-    if !haxelib_path.exists() {
-        Err(anyhow!(
-            "A .haxelib folder does not exist in this directory, so it cannot be removed."
-                .bright_red()
-                .bold()
-        ))?
-    }
-    println!("Removing .haxelib/ folder");
-    std::fs::remove_dir_all(haxelib_path).context("Failed to remove .haxelib folder")
 }

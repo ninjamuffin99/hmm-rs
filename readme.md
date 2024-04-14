@@ -31,11 +31,6 @@ or directly from git:
 
 ### hmm commands to implement
 
-- [x] list
-- [x] init - initializes the current working directory for hmm usage
-  - [x] create `hmm.json` and an empty `.haxelib` folder
-  - [ ] read from .haxelib/ folder
-- [x] help - prints help / command info
 - [ ] version - prints hmm version
 - [ ] install - installs libraries listed in hmm.json
   - [ ] haxelib
@@ -54,5 +49,3 @@ or directly from git:
 - [ ] lock
 - [x] check
 - [x] clean
-- [ ] hmm-update
-- [ ] hmm-remove
