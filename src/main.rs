@@ -1,22 +1,20 @@
+pub mod hmm;
+
 use anyhow::Ok;
+use anyhow::{anyhow, Context, Result};
 use clap::{Parser, Subcommand};
 use console::Emoji;
-// use gix::prelude::*;
-// use gix::Repository;
-use anyhow::{anyhow, Context, Result};
 use futures_util::StreamExt;
-use gix::date::time::format;
-use gix::odb::pack::multi_index::chunk::index_names::write;
+use hmm::dependencies::Dependancies;
+use hmm::haxelib::{Haxelib, HaxelibType};
 use human_bytes::human_bytes;
 use indicatif::{ProgressBar, ProgressStyle};
-use serde::{Deserialize, Serialize};
 use std::env;
 use std::fmt;
 use std::fs::File;
 use std::io::prelude::*;
 use std::path::Path;
 use std::path::PathBuf;
-use tempfile::Builder;
 use yansi::Paint;
 use zip::ZipArchive;
 
@@ -46,76 +44,6 @@ enum Commands {
     Check,
     /// Installs the dependencies from hmm.json, if they aren't already installed.
     Install,
-}
-
-#[derive(Serialize, Deserialize)]
-struct Dependancies {
-    dependencies: Vec<Haxelib>,
-}
-
-#[derive(Serialize, Deserialize)]
-struct Haxelib {
-    name: String,
-    #[serde(rename = "type")]
-    haxelib_type: HaxelibType,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    #[serde(rename = "ref")]
-    vcs_ref: Option<String>,
-    dir: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    url: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    version: Option<String>,
-}
-
-#[derive(Serialize, Deserialize, Debug, PartialEq)]
-enum HaxelibType {
-    #[serde(rename = "git")]
-    Git,
-    #[serde(rename = "haxelib")]
-    Haxelib,
-}
-
-impl fmt::Display for Dependancies {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", serde_json::to_string_pretty(self).unwrap())
-    }
-}
-
-impl Dependancies {
-    fn print_string_list(&self) -> Result<()> {
-        for haxelib in self.dependencies.iter() {
-            let version_or_ref = match &haxelib.version {
-                Some(v) => format!("version: {}", v),
-                None => match &haxelib.vcs_ref {
-                    Some(r) => format!("ref: {}", r),
-                    None => format!("No version or ref"),
-                },
-            };
-
-            let mut haxelib_output = format!(
-                "{} [{haxelib_type:?}] \n{} \n",
-                haxelib.name,
-                version_or_ref,
-                haxelib_type = haxelib.haxelib_type
-            );
-
-            match haxelib.haxelib_type {
-                HaxelibType::Git => match &haxelib.url {
-                    Some(u) => haxelib_output.push_str(&format!("url: {}\n", u)),
-                    None => {}
-                },
-                HaxelibType::Haxelib => {
-                    let haxelib_url = format!("https://lib.haxe.org/p/{}", haxelib.name);
-                    haxelib_output.push_str(&format!("url: {}\n", haxelib_url))
-                }
-                _ => {}
-            }
-
-            println!("{}", haxelib_output);
-        }
-        Ok(())
-    }
 }
 
 fn main() -> Result<()> {
