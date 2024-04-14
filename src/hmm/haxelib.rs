@@ -21,4 +21,8 @@ pub enum HaxelibType {
     Git,
     #[serde(rename = "haxelib")]
     Haxelib,
+    #[serde(rename = "dev")]
+    Dev,
+    #[serde(rename = "hg")]
+    Mecurial,
 }
