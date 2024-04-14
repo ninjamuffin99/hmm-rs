@@ -5,12 +5,10 @@ use anyhow::{anyhow, Context, Result};
 use clap::{Parser, Subcommand};
 use console::Emoji;
 use futures_util::StreamExt;
-use hmm::dependencies::Dependancies;
 use hmm::haxelib::{Haxelib, HaxelibType};
 use human_bytes::human_bytes;
 use indicatif::{ProgressBar, ProgressStyle};
 use std::env;
-use std::fmt;
 use std::fs::File;
 use std::io::prelude::*;
 use std::path::Path;
@@ -49,14 +47,10 @@ enum Commands {
 fn main() -> Result<()> {
     let args = Args::parse();
     match args.cmd {
-        Commands::List { path } => {
-            let file_to_open = path;
-            let dep_read = read_json(file_to_open.as_str())?;
-            dep_read.print_string_list()?
-        }
+        Commands::List { path } => hmm::json::read_json(&path)?.print_string_list()?,
         Commands::Init => {
             create_haxelib_folder()?;
-            create_empty_hmm_json()?
+            hmm::json::create_empty_hmm_json()?
         }
         Commands::Clean => remove_haxelib_folder()?,
         Commands::ToHxml => dump_to_hxml()?,
@@ -73,7 +67,7 @@ fn main() -> Result<()> {
 }
 
 fn install_from_hmm() -> Result<()> {
-    let deps = read_json("hmm.json")?;
+    let deps = hmm::json::read_json("hmm.json")?;
 
     for haxelib in deps.dependencies.iter() {
         match &haxelib.haxelib_type {
@@ -181,7 +175,7 @@ async fn install_from_haxelib(haxelib: &Haxelib) -> Result<()> {
 }
 
 fn compare_haxelib_to_hmm() -> Result<u32> {
-    let deps = read_json("hmm.json")?;
+    let deps = hmm::json::read_json("hmm.json")?;
 
     let mut incorrect_installs = 0;
 
@@ -295,7 +289,7 @@ fn compare_haxelib_to_hmm() -> Result<u32> {
 }
 
 fn dump_to_hxml() -> Result<()> {
-    let deps = read_json("hmm.json")?;
+    let deps = hmm::json::read_json("hmm.json")?;
     let mut hxml = String::new();
     for haxelib in deps.dependencies.iter() {
         let mut lib_string = String::from("-lib ");
@@ -346,46 +340,4 @@ fn remove_haxelib_folder() -> Result<()> {
     }
     println!("Removing .haxelib/ folder");
     std::fs::remove_dir_all(haxelib_path).context("Failed to remove .haxelib folder")
-}
-
-fn create_empty_hmm_json() -> Result<()> {
-    let empty_deps = Dependancies {
-        dependencies: vec![],
-    };
-
-    save_json(empty_deps, "hmm.json")
-}
-
-fn read_json(path: &str) -> Result<Dependancies> {
-    let file = File::open(path).context(format!("JSON {:?} not found", path))?;
-    let deps: Dependancies = serde_json::from_reader(file)?;
-    Ok(deps)
-}
-
-fn save_json(deps: Dependancies, path: &str) -> Result<()> {
-    println!("Saving to {}", path);
-    let j = serde_json::to_string_pretty(&deps)?;
-    let mut file = File::create(path)?;
-    file.write_all(j.as_bytes())?;
-    Ok(())
-}
-
-fn print_flixel_haxelib() -> Result<Dependancies> {
-    let haxelib = Haxelib {
-        name: String::from("flixel"),
-        haxelib_type: HaxelibType::Git,
-        vcs_ref: Option::Some(String::from("master")),
-        dir: Option::None,
-        url: Option::Some(String::from("https://github.com/haxeflixel/flixel")),
-        version: Option::None,
-    };
-
-    let dep: Dependancies = Dependancies {
-        dependencies: vec![haxelib],
-    };
-
-    // let j = serde_json::to_string(&dep)?;
-
-    // println!("{}", j);
-    Ok(dep)
 }
