@@ -13,6 +13,7 @@ license = "MIT OR Apache-2.0"
 
 [dependencies]
 anyhow = "1.0.82"
+bstr = "1.9.1"
 clap = { version = "4.5.4", features = ["derive", "unicode", "wrap_help"] }
 console = "0.15.8"
 error-chain = "0.12.4"
@@ -21,6 +22,9 @@ futures-util = "0.3.30"
 gix = { version = "0.61.0", default-features = false, features = [
     "revision",
     "index",
+    "blocking-network-client",
+    "worktree-mutation",
+    "blocking-http-transport-curl",
 ] }
 human_bytes = "0.4.3"
 indicatif = "0.17.8"
