@@ -16,6 +16,7 @@ use indicatif::{ProgressBar, ProgressStyle};
 use std::env;
 use std::fs::File;
 use std::io::Write;
+use std::path::Path;
 use std::path::PathBuf;
 use std::sync::atomic::AtomicBool;
 use yansi::Paint;
@@ -59,7 +60,11 @@ pub fn install_from_git_using_gix(haxelib: &Haxelib) -> Result<()> {
     ))?;
 
     let mut clone_path = PathBuf::from(".haxelib");
-    clone_path = clone_path.join(&haxelib.name).join("git");
+    clone_path = clone_path.join(&haxelib.name);
+
+    create_current_file(&clone_path, &String::from("git"))?;
+
+    clone_path = clone_path.join("git");
 
     std::fs::create_dir_all(&clone_path)?;
 
@@ -158,12 +163,7 @@ pub async fn install_from_haxelib(haxelib: &Haxelib) -> Result<()> {
         haxelib.version.as_ref().unwrap().as_str()
     );
 
-    let mut current_version_file = File::create(&output_dir.join(".current"))?;
-    write!(
-        current_version_file,
-        "{}",
-        haxelib.version.as_ref().unwrap()
-    )?;
+    create_current_file(&output_dir, haxelib.version.as_ref().unwrap())?;
 
     // unzipping
     output_dir = output_dir.join(version_as_commas.as_str());
@@ -187,5 +187,12 @@ pub async fn install_from_haxelib(haxelib: &Haxelib) -> Result<()> {
     );
     // print an empty line, for readability between downloads
     println!("");
+    Ok(())
+}
+
+pub fn create_current_file(path: &Path, content: &String) -> Result<()> {
+    std::fs::create_dir_all(path)?;
+    let mut current_version_file = File::create(path.join(".current"))?;
+    write!(current_version_file, "{}", content)?;
     Ok(())
 }
