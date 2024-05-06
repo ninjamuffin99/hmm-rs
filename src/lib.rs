@@ -31,6 +31,13 @@ enum Commands {
     Check,
     /// Installs the dependencies from hmm.json, if they aren't already installed.
     Install,
+    /// Installs a haxelib from lib.haxe.org
+    Haxelib {
+        /// The name of the haxelib to install
+        name: String,
+        /// The version of the haxelib to install
+        version: Option<String>,
+    },
 }
 
 pub fn run() -> Result<()> {
@@ -42,6 +49,9 @@ pub fn run() -> Result<()> {
         Commands::ToHxml => commands::tohxml_command::dump_to_hxml()?,
         Commands::Check => commands::check_command::check()?,
         Commands::Install => commands::install_command::install_from_hmm()?,
+        Commands::Haxelib { name, version } => {
+            commands::haxelib_command::install_haxelib(&name, &version)?
+        }
     }
     Ok(())
 }
