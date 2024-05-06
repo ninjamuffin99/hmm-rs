@@ -8,11 +8,12 @@ use std::io::Read;
 use yansi::Paint;
 
 pub fn check() -> Result<()> {
+    let dep_length = hmm::json::read_json("hmm.json")?.dependencies.len();
     match compare_haxelib_to_hmm()? {
         0 => println!("All dependencies are installed at their proper versions"),
         installs => println!(
-            "{} dependencie(s) are installed at incorrect versions",
-            installs
+            "{} / {} dependencie(s) are installed at the correct versions",
+            installs, dep_length
         ),
     }
     Ok(())
@@ -21,7 +22,7 @@ pub fn check() -> Result<()> {
 fn compare_haxelib_to_hmm() -> Result<u32> {
     let deps = hmm::json::read_json("hmm.json")?;
 
-    let mut incorrect_installs = 0;
+    let mut incorrect_installs = deps.dependencies.len() as u32;
 
     for haxelib in deps.dependencies.iter() {
         // Haxelib folders replace . with , in the folder name
@@ -32,8 +33,9 @@ fn compare_haxelib_to_hmm() -> Result<u32> {
         // assumes an error will occur, and if not, this line will be rewritten at the end of the for loop
         println!("{} {}", haxelib.name.bold().red(), Emoji("❌", "[X]"));
         if !haxelib_path.exists() {
-            println!("{} not installed", haxelib.name.bold().red());
-            incorrect_installs += 1;
+            let err_message = format!("{} not installed", haxelib.name);
+            println!("{}", err_message.red());
+            incorrect_installs -= 1;
             continue;
         }
 
@@ -64,7 +66,7 @@ fn compare_haxelib_to_hmm() -> Result<u32> {
                         current_version.red()
                     );
 
-                    incorrect_installs += 1;
+                    incorrect_installs -= 1;
                     continue;
                 }
             }
@@ -72,7 +74,24 @@ fn compare_haxelib_to_hmm() -> Result<u32> {
                 let repo_path = haxelib_path.join("git");
                 let repo = gix::discover(&repo_path)
                     .context(anyhow!("Could not find git repo {:?}", repo_path))?;
-                let head_ref = repo.head_id()?;
+                let head_ref = match repo.head_id() {
+                    Ok(h) => h,
+                    Err(e) => {
+                        println!(
+                            "{} {}",
+                            haxelib.name.red().bold(),
+                            "is not at the correct version".red()
+                        );
+                        println!("Error: {}", e);
+                        println!(
+                            "Expected: {} | Installed: {}",
+                            haxelib.vcs_ref.as_ref().unwrap().red(),
+                            "unknown".red()
+                        );
+                        incorrect_installs -= 1;
+                        continue;
+                    }
+                };
                 let head_ref_string = head_ref.to_string();
 
                 current_version = head_ref_string.clone();
@@ -112,7 +131,7 @@ fn compare_haxelib_to_hmm() -> Result<u32> {
                         output.red()
                     );
 
-                    incorrect_installs += 1;
+                    incorrect_installs -= 1;
                     continue;
                 }
             }
