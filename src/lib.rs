@@ -20,6 +20,8 @@ enum Commands {
         #[arg(short, long)]
         #[arg(default_value_t = String::from("hmm.json"))]
         path: String,
+        #[arg(short, long)]
+        lib: Option<String>,
     },
     /// Creates an empty .haxelib/ folder, and an empty hmm.json file
     Init,
@@ -43,7 +45,7 @@ enum Commands {
 pub fn run() -> Result<()> {
     let args = Args::parse();
     match args.cmd {
-        Commands::List { path } => hmm::json::read_json(&path)?.print_string_list()?,
+        Commands::List { path, lib } => hmm::json::read_json(&path)?.print_string_list(&lib)?,
         Commands::Init => commands::init_command::init_hmm()?,
         Commands::Clean => commands::clean_command::remove_haxelib_folder()?,
         Commands::ToHxml => commands::tohxml_command::dump_to_hxml()?,
