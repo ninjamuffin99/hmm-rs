@@ -15,9 +15,6 @@ or directly from git:
 
 ## TODO List
 
-- [ ] Install Haxelibs from Git
-- [ ] Install haxelibs from haxelib (lib.haxe.org)
-- [ ] Download to `.haxelib/` folder
 - [ ] Github actions
   - [ ] Windows Build
   - [ ] Linux Build
@@ -33,7 +30,6 @@ or directly from git:
   - [ ] check if version is already installed
 - [ ] from-hxml
 - [ ] reinstall
-- [ ] setup
 - [ ] haxelib
 - [ ] git
 - [ ] hg
