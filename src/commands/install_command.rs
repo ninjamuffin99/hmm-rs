@@ -16,16 +16,25 @@ use indicatif::{ProgressBar, ProgressStyle};
 use std::env;
 use std::fs::File;
 use std::io::Write;
+use std::num::NonZero;
 use std::path::Path;
 use std::path::PathBuf;
 use std::sync::atomic::AtomicBool;
 use yansi::Paint;
 use zip::ZipArchive;
 
+use super::check_command::compare_haxelib_to_hmm;
+
 pub fn install_from_hmm() -> Result<()> {
     let deps = hmm::json::read_json("hmm.json")?;
 
-    for haxelib in deps.dependencies.iter() {
+    let installs_needed = compare_haxelib_to_hmm(&deps)?;
+    println!(
+        "{} dependencies need to be installed",
+        installs_needed.len().to_string().bold()
+    );
+
+    for haxelib in installs_needed.iter() {
         match &haxelib.haxelib_type {
             HaxelibType::Haxelib => install_from_haxelib(haxelib)?,
             HaxelibType::Git => install_from_git_using_gix(haxelib)?,
@@ -66,7 +75,19 @@ pub fn install_from_git_using_gix(haxelib: &Haxelib) -> Result<()> {
 
     clone_path = clone_path.join("git");
 
-    std::fs::create_dir_all(&clone_path)?;
+    match std::fs::create_dir_all(&clone_path) {
+        Ok(_) => println!("Created directory: {:?}", clone_path.as_path()),
+        Err(e) => {
+            if e.kind() == std::io::ErrorKind::AlreadyExists {
+                println!("Directory already exists: {:?}", clone_path.as_path());
+            } else {
+                return Err(anyhow!(
+                    "Error creating directory: {:?}",
+                    clone_path.as_path()
+                ));
+            }
+        }
+    };
 
     let opts = create::Options {
         destination_must_be_empty: false,
@@ -82,6 +103,9 @@ pub fn install_from_git_using_gix(haxelib: &Haxelib) -> Result<()> {
     )
     .context("error preparing clone")?;
 
+    da_fetch = da_fetch.with_shallow(gix::remote::fetch::Shallow::DepthAtRemote(
+        NonZero::new(1).unwrap(),
+    ));
     let mut da_checkout = da_fetch.fetch_then_checkout(Discard, &AtomicBool::new(false))?;
 
     da_checkout

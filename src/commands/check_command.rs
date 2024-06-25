@@ -1,28 +1,26 @@
 use std::{fs::File, path::Path};
 
-use crate::hmm;
-use crate::hmm::haxelib::HaxelibType;
+use crate::hmm::haxelib::{Haxelib, HaxelibType};
+use crate::hmm::{self, dependencies::Dependancies};
 use anyhow::{anyhow, Context, Result};
 use console::Emoji;
 use std::io::Read;
 use yansi::Paint;
 
 pub fn check() -> Result<()> {
-    let dep_length = hmm::json::read_json("hmm.json")?.dependencies.len();
-    match compare_haxelib_to_hmm()? {
-        0 => println!("All dependencies are installed at their proper versions"),
+    let deps = hmm::json::read_json("hmm.json")?;
+    match compare_haxelib_to_hmm(&deps)? {
         installs => println!(
             "{} / {} dependencie(s) are installed at the correct versions",
-            installs, dep_length
+            deps.dependencies.len() - installs.len(),
+            deps.dependencies.len()
         ),
     }
     Ok(())
 }
 
-fn compare_haxelib_to_hmm() -> Result<u32> {
-    let deps = hmm::json::read_json("hmm.json")?;
-
-    let mut incorrect_installs = deps.dependencies.len() as u32;
+pub fn compare_haxelib_to_hmm(deps: &Dependancies) -> Result<Vec<&Haxelib>> {
+    let mut incorrect_installs = Vec::new();
 
     for haxelib in deps.dependencies.iter() {
         // Haxelib folders replace . with , in the folder name
@@ -35,7 +33,7 @@ fn compare_haxelib_to_hmm() -> Result<u32> {
         if !haxelib_path.exists() {
             let err_message = format!("{} not installed", haxelib.name);
             println!("{}", err_message.red());
-            incorrect_installs -= 1;
+            incorrect_installs.push(haxelib);
             continue;
         }
 
@@ -66,7 +64,7 @@ fn compare_haxelib_to_hmm() -> Result<u32> {
                         current_version.red()
                     );
 
-                    incorrect_installs -= 1;
+                    incorrect_installs.push(haxelib);
                     continue;
                 }
             }
@@ -88,7 +86,7 @@ fn compare_haxelib_to_hmm() -> Result<u32> {
                             haxelib.vcs_ref.as_ref().unwrap().red(),
                             "unknown".red()
                         );
-                        incorrect_installs -= 1;
+                        incorrect_installs.push(haxelib);
                         continue;
                     }
                 };
@@ -131,7 +129,7 @@ fn compare_haxelib_to_hmm() -> Result<u32> {
                         output.red()
                     );
 
-                    incorrect_installs -= 1;
+                    incorrect_installs.push(haxelib);
                     continue;
                 }
             }
