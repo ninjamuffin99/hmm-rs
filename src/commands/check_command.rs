@@ -105,7 +105,6 @@ pub fn compare_haxelib_to_hmm(deps: &Dependancies) -> Result<Vec<&Haxelib>> {
                 };
 
                 let branch_commit = head_ref.to_string();
-                println!("Branch commit: {}", branch_name);
 
                 if haxelib.vcs_ref.as_ref().unwrap() != &head_ref_string
                     && (haxelib.vcs_ref.as_ref().unwrap() != &branch_name
