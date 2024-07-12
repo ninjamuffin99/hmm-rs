@@ -25,6 +25,7 @@ gix = { version = "0.63.0", default-features = false, features = [
     "blocking-network-client",
     "worktree-mutation",
     "blocking-http-transport-curl",
+    "status",
 ] }
 human_bytes = "0.4.3"
 indicatif = "0.17.8"

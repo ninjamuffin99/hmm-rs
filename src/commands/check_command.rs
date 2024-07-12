@@ -1,6 +1,7 @@
+use std::path::PathBuf;
 use std::{fs::File, path::Path};
 
-use crate::hmm::haxelib::{Haxelib, HaxelibType};
+use crate::hmm::haxelib::{self, Haxelib, HaxelibType};
 use crate::hmm::{self, dependencies::Dependancies};
 use anyhow::{anyhow, Context, Result};
 use console::Emoji;
@@ -9,6 +10,7 @@ use yansi::Paint;
 
 pub fn check() -> Result<()> {
     let deps = hmm::json::read_json("hmm.json")?;
+
     match compare_haxelib_to_hmm(&deps)? {
         installs => println!(
             "{} / {} dependencie(s) are installed at the correct versions",
@@ -102,8 +104,11 @@ pub fn compare_haxelib_to_hmm(deps: &Dependancies) -> Result<Vec<&Haxelib>> {
                     None => String::new(),
                 };
 
+                let branch_commit = repo.find_reference(branch_name.as_str())?.id().to_string();
+
                 if haxelib.vcs_ref.as_ref().unwrap() != &head_ref_string
-                    && haxelib.vcs_ref.as_ref().unwrap() != &branch_name
+                    && (haxelib.vcs_ref.as_ref().unwrap() != &branch_name
+                        && haxelib.vcs_ref.as_ref().unwrap() != &branch_commit)
                 {
                     println!(
                         "{} {}",
@@ -124,11 +129,22 @@ pub fn compare_haxelib_to_hmm(deps: &Dependancies) -> Result<Vec<&Haxelib>> {
                     }
 
                     println!(
-                        "Expected: {} | Installed: {}",
+                        "Expected: {} | Installed: {} at {}",
                         haxelib.vcs_ref.as_ref().unwrap().red(),
-                        output.red()
+                        output.red(),
+                        branch_commit.red()
                     );
 
+                    incorrect_installs.push(haxelib);
+                    continue;
+                }
+
+                if repo.is_dirty()? {
+                    println!(
+                        "{} {}",
+                        haxelib.name.red().bold(),
+                        "has local changes".red()
+                    );
                     incorrect_installs.push(haxelib);
                     continue;
                 }
