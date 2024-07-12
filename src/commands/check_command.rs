@@ -104,7 +104,11 @@ pub fn compare_haxelib_to_hmm(deps: &Dependancies) -> Result<Vec<&Haxelib>> {
                     None => String::new(),
                 };
 
-                let branch_commit = repo.find_reference(branch_name.as_str())?.id().to_string();
+                let branch_commit = match repo.try_find_reference(branch_name.as_str()) {
+                    Ok(h) => h.unwrap().id().to_string(),
+
+                    Err(_) => String::new(),
+                };
 
                 if haxelib.vcs_ref.as_ref().unwrap() != &head_ref_string
                     && (haxelib.vcs_ref.as_ref().unwrap() != &branch_name
