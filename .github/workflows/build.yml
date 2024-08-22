@@ -83,13 +83,10 @@ jobs:
         uses: moonrepo/setup-rust@v1
       - name: Install target
         run: rustup target add ${{ matrix.target }}
-      - name: Install dependencies
-        run: sudo apt-get install -y libssl-dev
-      - name: Debug pkg-config and OpenSSL
+      - name: Set env vars
         run: |
-          pkg-config --cflags openssl
-          pkg-config --libs openssl
-          openssl version
+          export PKG_CONFIG_PATH=/usr/lib/x86_64-linux-gnu/pkgconfig/:$PKG_CONFIG_PATH
+          export PKG_CONFIG_SYSROOT_DIR=/
       - name: Build
         run: cargo build --target ${{ matrix.target }}
       - name: Run tests
