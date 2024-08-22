@@ -31,6 +31,7 @@ jobs:
         run: cargo test --target ${{ matrix.target }}
       - name: Create archive
         run: |
+          dir
           mkdir -p hmm-rs-${{ matrix.target }}
           cp target/${{ matrix.target }}/debug/hmm-rs.pdb ./hmm-rs-${{ matrix.target }}/hmm-rs.pdb
           cp target/${{ matrix.target }}/debug/hmm-rs.exe ./hmm-rs-${{ matrix.target }}/hmm-rs.exe
@@ -61,6 +62,7 @@ jobs:
         run: cargo test --target ${{ matrix.target }}
       - name: Create archive
         run: |
+          ls
           mkdir -p hmm-rs-${{ matrix.target }}
           cp target/${{ matrix.target }}/debug/hmm-rs.pdb ./hmm-rs-${{ matrix.target }}/hmm-rs.pdb
           cp target/${{ matrix.target }}/debug/hmm-rs.exe ./hmm-rs-${{ matrix.target }}/hmm-rs.exe
@@ -93,6 +95,7 @@ jobs:
         run: cargo test --target ${{ matrix.target }}
       - name: Create archive
         run: |
+          ls
           mkdir -p hmm-rs-${{ matrix.target }}
           cp target/${{ matrix.target }}/debug/hmm-rs.pdb ./hmm-rs-${{ matrix.target }}/hmm-rs.pdb
           cp target/${{ matrix.target }}/debug/hmm-rs.exe ./hmm-rs-${{ matrix.target }}/hmm-rs.exe
