@@ -40,7 +40,7 @@ jobs:
           name: hmm-rs-${{ matrix.target }}
           path: hmm-rs-${{ matrix.target }}
   macos:
-    name: windows build/archives (${{ matrix.target }})
+    name: macos build/archives (${{ matrix.target }})
     if: github.event_name == 'push'
     runs-on: macos-latest
     strategy:
@@ -70,7 +70,7 @@ jobs:
           name: hmm-rs-${{ matrix.target }}
           path: hmm-rs-${{ matrix.target }}
   linux:
-    name: windows build/archives (${{ matrix.target }})
+    name: linux build/archives (${{ matrix.target }})
     if: github.event_name == 'push'
     runs-on: windows-latest
     strategy:
