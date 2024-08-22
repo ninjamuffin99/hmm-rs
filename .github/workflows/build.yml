@@ -9,17 +9,75 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  release_with_artifacts:
-    name: release ${{ matrix.target }} (with artifacts published)
+  windows:
+    name: windows build/archives (${{ matrix.target }})
     if: github.event_name == 'push'
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
     strategy:
       fail-fast: false
       matrix:
         include:
           - target: x86_64-pc-windows-msvc
-          - target: x86_64-unknown-linux-musl
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      - name: Set up Rust
+        uses: moonrepo/setup-rust@v1
+      - name: Install target
+        run: rustup target add ${{ matrix.target }}
+      - name: Build
+        run: cargo build --target ${{ matrix.target }}
+      - name: Run tests
+        run: cargo test --target ${{ matrix.target }}
+      - name: Create archive
+        run: |
+          mkdir -p hmm-rs-${{ matrix.target }}
+          cp ./target/${{ matrix.target }}/debug/hmm-rs.pdb ./hmm-rs-${{ matrix.target }}/hmm-rs.pdb
+          cp ./target/${{ matrix.target }}/debug/hmm-rs.exe ./hmm-rs-${{ matrix.target }}/hmm-rs.exe
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: hmm-rs-${{ matrix.target }}
+          path: hmm-rs-${{ matrix.target }}
+  macos:
+    name: windows build/archives (${{ matrix.target }})
+    if: github.event_name == 'push'
+    runs-on: macos-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
           - target: x86_64-apple-darwin
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      - name: Set up Rust
+        uses: moonrepo/setup-rust@v1
+      - name: Install target
+        run: rustup target add ${{ matrix.target }}
+      - name: Build
+        run: cargo build --target ${{ matrix.target }}
+      - name: Run tests
+        run: cargo test --target ${{ matrix.target }}
+      - name: Create archive
+        run: |
+          mkdir -p hmm-rs-${{ matrix.target }}
+          cp ./target/${{ matrix.target }}/debug/hmm-rs.pdb ./hmm-rs-${{ matrix.target }}/hmm-rs.pdb
+          cp ./target/${{ matrix.target }}/debug/hmm-rs.exe ./hmm-rs-${{ matrix.target }}/hmm-rs.exe
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: hmm-rs-${{ matrix.target }}
+          path: hmm-rs-${{ matrix.target }}
+  linux:
+    name: windows build/archives (${{ matrix.target }})
+    if: github.event_name == 'push'
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: x86_64-unknown-linux-musl
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
