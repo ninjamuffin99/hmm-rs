@@ -84,7 +84,7 @@ jobs:
       - name: Install target
         run: rustup target add ${{ matrix.target }}
       - name: Install OpenSSL
-        run: sudo apt install openssl
+        run: apt install openssl
       - name: Build
         run: cargo build --target ${{ matrix.target }}
       - name: Run tests
