@@ -70,7 +70,7 @@ jobs:
   linux:
     name: linux build/archives (${{ matrix.target }})
     if: github.event_name == 'push'
-    runs-on: windows-latest
+    runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
@@ -83,8 +83,8 @@ jobs:
         uses: moonrepo/setup-rust@v1
       - name: Install target
         run: rustup target add ${{ matrix.target }}
-      - name: Install OpenSSL
-        run: apt install openssl
+      - name: Install dependencies
+        run: sudo apt-get install -y libssl-dev pkg-config
       - name: Build
         run: cargo build --target ${{ matrix.target }}
       - name: Run tests
