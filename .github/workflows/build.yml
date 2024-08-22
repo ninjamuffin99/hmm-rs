@@ -1,7 +1,7 @@
 name: Build & Test hmm-rs (cargo)
 on:
   push:
-    branches: [ "main", "workflows" ]
+    branches: [ "main" ]
   pull_request:
     branches: [ "main" ]
 
