@@ -18,11 +18,8 @@ jobs:
       matrix:
         include:
           - target: x86_64-pc-windows-msvc
-            archive: zip
           - target: x86_64-unknown-linux-musl
-            archive: tar.gz
           - target: x86_64-apple-darwin
-            archive: zip
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -34,5 +31,13 @@ jobs:
         run: cargo build --target ${{ matrix.target }}
       - name: Run tests
         run: cargo test --target ${{ matrix.target }}
-          
-  
+      - name: Create archive
+        run: |
+          mkdir -p hmm-rs-${{ matrix.target }}
+          cp ./target/${{ matrix.target }}/debug/hmm-rs.pdb ./hmm-rs-${{ matrix.target }}/hmm-rs.pdb
+          cp ./target/${{ matrix.target }}/debug/hmm-rs.exe ./hmm-rs-${{ matrix.target }}/hmm-rs.exe
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: hmm-rs-${{ matrix.target }}
+          path: hmm-rs-${{ matrix.target }}
