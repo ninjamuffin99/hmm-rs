@@ -32,6 +32,13 @@ jobs:
       - name: Create archive
         run: |
           dir
+          cd target
+          dir
+          cd ${{ matrix.target }}
+          dir
+          cd debug
+          dir
+          cd ../../..
           mkdir -p hmm-rs-${{ matrix.target }}
           cp target/${{ matrix.target }}/debug/hmm-rs.pdb ./hmm-rs-${{ matrix.target }}/hmm-rs.pdb
           cp target/${{ matrix.target }}/debug/hmm-rs.exe ./hmm-rs-${{ matrix.target }}/hmm-rs.exe
@@ -63,6 +70,13 @@ jobs:
       - name: Create archive
         run: |
           ls
+          cd target
+          ls
+          cd ${{ matrix.target }}
+          ls
+          cd debug
+          ls
+          cd ../../..
           mkdir -p hmm-rs-${{ matrix.target }}
           cp target/${{ matrix.target }}/debug/hmm-rs.pdb ./hmm-rs-${{ matrix.target }}/hmm-rs.pdb
           cp target/${{ matrix.target }}/debug/hmm-rs.exe ./hmm-rs-${{ matrix.target }}/hmm-rs.exe
@@ -96,6 +110,13 @@ jobs:
       - name: Create archive
         run: |
           ls
+          cd target
+          ls
+          cd ${{ matrix.target }}
+          ls
+          cd debug
+          ls
+          cd ../../..
           mkdir -p hmm-rs-${{ matrix.target }}
           cp target/${{ matrix.target }}/debug/hmm-rs.pdb ./hmm-rs-${{ matrix.target }}/hmm-rs.pdb
           cp target/${{ matrix.target }}/debug/hmm-rs.exe ./hmm-rs-${{ matrix.target }}/hmm-rs.exe
