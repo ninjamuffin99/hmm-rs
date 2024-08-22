@@ -32,8 +32,8 @@ jobs:
       - name: Create archive
         run: |
           mkdir -p hmm-rs-${{ matrix.target }}
-          cp ./target/${{ matrix.target }}/debug/hmm-rs.pdb ./hmm-rs-${{ matrix.target }}/hmm-rs.pdb
-          cp ./target/${{ matrix.target }}/debug/hmm-rs.exe ./hmm-rs-${{ matrix.target }}/hmm-rs.exe
+          cp target/${{ matrix.target }}/debug/hmm-rs.pdb ./hmm-rs-${{ matrix.target }}/hmm-rs.pdb
+          cp target/${{ matrix.target }}/debug/hmm-rs.exe ./hmm-rs-${{ matrix.target }}/hmm-rs.exe
       - name: Upload artifact
         uses: actions/upload-artifact@v3
         with:
@@ -62,8 +62,8 @@ jobs:
       - name: Create archive
         run: |
           mkdir -p hmm-rs-${{ matrix.target }}
-          cp ./target/${{ matrix.target }}/debug/hmm-rs.pdb ./hmm-rs-${{ matrix.target }}/hmm-rs.pdb
-          cp ./target/${{ matrix.target }}/debug/hmm-rs.exe ./hmm-rs-${{ matrix.target }}/hmm-rs.exe
+          cp target/${{ matrix.target }}/debug/hmm-rs.pdb ./hmm-rs-${{ matrix.target }}/hmm-rs.pdb
+          cp target/${{ matrix.target }}/debug/hmm-rs.exe ./hmm-rs-${{ matrix.target }}/hmm-rs.exe
       - name: Upload artifact
         uses: actions/upload-artifact@v3
         with:
@@ -85,6 +85,8 @@ jobs:
         uses: moonrepo/setup-rust@v1
       - name: Install target
         run: rustup target add ${{ matrix.target }}
+      - name: Install OpenSSL
+        run: sudo 
       - name: Build
         run: cargo build --target ${{ matrix.target }}
       - name: Run tests
@@ -92,8 +94,8 @@ jobs:
       - name: Create archive
         run: |
           mkdir -p hmm-rs-${{ matrix.target }}
-          cp ./target/${{ matrix.target }}/debug/hmm-rs.pdb ./hmm-rs-${{ matrix.target }}/hmm-rs.pdb
-          cp ./target/${{ matrix.target }}/debug/hmm-rs.exe ./hmm-rs-${{ matrix.target }}/hmm-rs.exe
+          cp target/${{ matrix.target }}/debug/hmm-rs.pdb ./hmm-rs-${{ matrix.target }}/hmm-rs.pdb
+          cp target/${{ matrix.target }}/debug/hmm-rs.exe ./hmm-rs-${{ matrix.target }}/hmm-rs.exe
       - name: Upload artifact
         uses: actions/upload-artifact@v3
         with:
