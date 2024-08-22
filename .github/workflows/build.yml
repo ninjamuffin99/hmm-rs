@@ -83,8 +83,11 @@ jobs:
         uses: moonrepo/setup-rust@v1
       - name: Install target
         run: rustup target add ${{ matrix.target }}
-      - name: Install dependencies
-        run: sudo apt-get install -y libssl-dev pkg-config
+      - name: Debug pkg-config and OpenSSL
+        run: |
+          pkg-config --cflags openssl
+          pkg-config --libs openssl
+          openssl version
       - name: Build
         run: cargo build --target ${{ matrix.target }}
       - name: Run tests
