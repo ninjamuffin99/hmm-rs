@@ -83,12 +83,6 @@ jobs:
         uses: moonrepo/setup-rust@v1
       - name: Install target
         run: rustup target add ${{ matrix.target }}
-      - name: Ensure OpenSSL
-        run: |
-          sudo apt-get update
-          sudo apt-get install pkg-config libssl-dev
-          dpkg -L libssl-dev | grep openssl.pc
-          export OPENSSL_DIR=TODO
       - name: Build
         run: cargo build --target ${{ matrix.target }}
       - name: Run tests
