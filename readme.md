@@ -16,9 +16,9 @@ or directly from git:
 ## TODO List
 
 - [ ] Github actions
-  - [ ] Windows Build
-  - [ ] Linux Build
-  - [ ] Mac Build
+  - [x] Windows Build
+  - [x] Linux Build
+  - [x] Mac Build
   - [ ] Github Releases
 - [ ] Create tests against haxe `hmm`
 
