@@ -1,4 +1,4 @@
-use super::haxelib::{self, Haxelib, HaxelibType};
+use super::haxelib::{Haxelib, HaxelibType};
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use std::fmt;

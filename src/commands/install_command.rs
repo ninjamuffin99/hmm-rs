@@ -8,8 +8,6 @@ use futures_util::StreamExt;
 use gix::clone;
 use gix::create;
 use gix::progress::Discard;
-use gix::NestedProgress;
-use gix::Progress;
 use gix::Url;
 use human_bytes::human_bytes;
 use indicatif::{ProgressBar, ProgressStyle};
@@ -54,7 +52,7 @@ pub fn install_from_git_using_gix(haxelib: &Haxelib) -> Result<()> {
 
     let path_with_no_https = haxelib.url.as_ref().unwrap().replace("https://", "");
 
-    let mut clone_url = Url::from_parts(
+    let clone_url = Url::from_parts(
         gix::url::Scheme::Https,
         None,
         None,

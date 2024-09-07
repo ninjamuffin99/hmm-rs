@@ -1,7 +1,6 @@
-use std::path::PathBuf;
 use std::{fs::File, path::Path};
 
-use crate::hmm::haxelib::{self, Haxelib, HaxelibType};
+use crate::hmm::haxelib::{Haxelib, HaxelibType};
 use crate::hmm::{self, dependencies::Dependancies};
 use anyhow::{anyhow, Context, Result};
 use console::Emoji;
