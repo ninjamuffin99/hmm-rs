@@ -1,6 +1,8 @@
+use crate::commands::check_command::InstallType;
 use crate::hmm;
 use crate::hmm::haxelib::Haxelib;
 use crate::hmm::haxelib::HaxelibType;
+use anyhow::Ok;
 use anyhow::{anyhow, Context, Result};
 use bstr::BString;
 use console::Emoji;
@@ -22,6 +24,7 @@ use yansi::Paint;
 use zip::ZipArchive;
 
 use super::check_command::compare_haxelib_to_hmm;
+use super::check_command::HaxelibStatus;
 
 pub fn install_from_hmm() -> Result<()> {
     let deps = hmm::json::read_json("hmm.json")?;
@@ -32,14 +35,22 @@ pub fn install_from_hmm() -> Result<()> {
         installs_needed.len().to_string().bold()
     );
 
-    for haxelib in installs_needed.iter() {
-        match &haxelib.haxelib_type {
-            HaxelibType::Haxelib => install_from_haxelib(haxelib)?,
-            HaxelibType::Git => install_from_git_using_gix(haxelib)?,
-            lib_type => println!(
-                "{}: Installing from {:?} not yet implemented",
-                haxelib.name.red(),
-                lib_type
+    for install_status in installs_needed.iter() {
+        match &install_status.install_type {
+            InstallType::Missing => handle_install(install_status)?,
+            InstallType::Outdated => match &install_status.lib.haxelib_type {
+                HaxelibType::Haxelib => install_from_haxelib(install_status.lib)?,
+                HaxelibType::Git => install_from_git_using_gix_checkout(install_status.lib)?,
+                lib_type => println!(
+                    "{}: Installing from {:?} not yet implemented",
+                    install_status.lib.name.red(),
+                    lib_type
+                ),
+            },
+            InstallType::AlreadyInstalled => (), // do nothing on things already installed at the right version
+            _ => println!(
+                "{} {:?}: Not implemented",
+                install_status.lib.name, install_status.install_type
             ),
         }
     }
@@ -47,8 +58,22 @@ pub fn install_from_hmm() -> Result<()> {
     Ok(())
 }
 
-pub fn install_from_git_using_gix(haxelib: &Haxelib) -> Result<()> {
-    println!("Installing {} from git using gix", haxelib.name);
+pub fn handle_install(haxelib_status: &HaxelibStatus) -> Result<()> {
+    match &haxelib_status.lib.haxelib_type {
+        HaxelibType::Haxelib => install_from_haxelib(haxelib_status.lib)?,
+        HaxelibType::Git => install_from_git_using_gix_clone(haxelib_status.lib)?,
+        lib_type => println!(
+            "{}: Installing from {:?} not yet implemented",
+            haxelib_status.lib.name.red(),
+            lib_type
+        ),
+    }
+
+    Ok(())
+}
+
+pub fn install_from_git_using_gix_clone(haxelib: &Haxelib) -> Result<()> {
+    println!("Installing {} from git using clone", haxelib.name);
 
     let path_with_no_https = haxelib.url.as_ref().unwrap().replace("https://", "");
 
@@ -74,7 +99,7 @@ pub fn install_from_git_using_gix(haxelib: &Haxelib) -> Result<()> {
     clone_path = clone_path.join("git");
 
     match std::fs::create_dir_all(&clone_path) {
-        Ok(_) => println!("Created directory: {:?}", clone_path.as_path()),
+        core::result::Result::Ok(_) => println!("Created directory: {:?}", clone_path.as_path()),
         Err(e) => {
             if e.kind() == std::io::ErrorKind::AlreadyExists {
                 println!("Directory already exists: {:?}", clone_path.as_path());
@@ -167,7 +192,7 @@ pub async fn install_from_haxelib(haxelib: &Haxelib) -> Result<()> {
     let mut output_dir: PathBuf = [".haxelib", haxelib.name.as_str()].iter().collect();
 
     match std::fs::create_dir(&output_dir) {
-        Ok(_) => println!("Created directory: {:?}", output_dir.as_path()),
+        core::result::Result::Ok(_) => println!("Created directory: {:?}", output_dir.as_path()),
         Err(e) => {
             if e.kind() == std::io::ErrorKind::AlreadyExists {
                 println!("Directory already exists: {:?}", output_dir.as_path());
@@ -209,6 +234,10 @@ pub async fn install_from_haxelib(haxelib: &Haxelib) -> Result<()> {
     );
     // print an empty line, for readability between downloads
     println!("");
+    Ok(())
+}
+
+pub fn install_from_git_using_gix_checkout(haxelib: &Haxelib) -> Result<()> {
     Ok(())
 }
 

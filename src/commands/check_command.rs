@@ -7,6 +7,26 @@ use console::Emoji;
 use std::io::Read;
 use yansi::Paint;
 
+pub struct HaxelibStatus<'a> {
+    pub lib: &'a Haxelib,
+    pub install_type: InstallType,
+}
+
+// First, define the install type enum
+#[derive(Debug, PartialEq)]
+pub enum InstallType {
+    Missing,          // Needs to be installed
+    Outdated,         // Installed but wrong version
+    AlreadyInstalled, // Correctly installed
+    Conflict,         // Version conflicts between dependencies
+}
+
+impl<'a> HaxelibStatus<'a> {
+    pub fn new(lib: &'a Haxelib, install_type: InstallType) -> Self {
+        Self { lib, install_type }
+    }
+}
+
 pub fn check() -> Result<()> {
     let deps = hmm::json::read_json("hmm.json")?;
 
@@ -20,8 +40,8 @@ pub fn check() -> Result<()> {
     Ok(())
 }
 
-pub fn compare_haxelib_to_hmm(deps: &Dependancies) -> Result<Vec<&Haxelib>> {
-    let mut incorrect_installs = Vec::new();
+pub fn compare_haxelib_to_hmm(deps: &Dependancies) -> Result<Vec<HaxelibStatus>> {
+    let mut install_status = Vec::new();
 
     for haxelib in deps.dependencies.iter() {
         // Haxelib folders replace . with , in the folder name
@@ -34,7 +54,8 @@ pub fn compare_haxelib_to_hmm(deps: &Dependancies) -> Result<Vec<&Haxelib>> {
         if !haxelib_path.exists() {
             let err_message = format!("{} not installed", haxelib.name);
             println!("{}", err_message.red());
-            incorrect_installs.push(haxelib);
+
+            install_status.push(HaxelibStatus::new(haxelib, InstallType::Missing));
             continue;
         }
 
@@ -65,7 +86,7 @@ pub fn compare_haxelib_to_hmm(deps: &Dependancies) -> Result<Vec<&Haxelib>> {
                         current_version.red()
                     );
 
-                    incorrect_installs.push(haxelib);
+                    install_status.push(HaxelibStatus::new(haxelib, InstallType::Outdated));
                     continue;
                 }
             }
@@ -87,7 +108,7 @@ pub fn compare_haxelib_to_hmm(deps: &Dependancies) -> Result<Vec<&Haxelib>> {
                             haxelib.vcs_ref.as_ref().unwrap().red(),
                             "unknown".red()
                         );
-                        incorrect_installs.push(haxelib);
+                        install_status.push(HaxelibStatus::new(haxelib, InstallType::Outdated));
                         continue;
                     }
                 };
@@ -134,7 +155,7 @@ pub fn compare_haxelib_to_hmm(deps: &Dependancies) -> Result<Vec<&Haxelib>> {
                         branch_commit.red()
                     );
 
-                    incorrect_installs.push(haxelib);
+                    install_status.push(HaxelibStatus::new(haxelib, InstallType::Outdated));
                     continue;
                 }
 
@@ -144,7 +165,7 @@ pub fn compare_haxelib_to_hmm(deps: &Dependancies) -> Result<Vec<&Haxelib>> {
                         haxelib.name.red().bold(),
                         "has local changes".red()
                     );
-                    incorrect_installs.push(haxelib);
+                    install_status.push(HaxelibStatus::new(haxelib, InstallType::Conflict));
                     continue;
                 }
             }
@@ -160,6 +181,7 @@ pub fn compare_haxelib_to_hmm(deps: &Dependancies) -> Result<Vec<&Haxelib>> {
         );
         print!("\x1B[1A\x1B[2K{}", inner.bright_green().wrap());
         println!();
+        install_status.push(HaxelibStatus::new(haxelib, InstallType::AlreadyInstalled));
     }
-    Ok(incorrect_installs)
+    Ok(install_status)
 }
