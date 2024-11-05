@@ -168,6 +168,9 @@ pub fn compare_haxelib_to_hmm(deps: &Dependancies) -> Result<Vec<HaxelibStatus>>
                     install_status.push(HaxelibStatus::new(haxelib, InstallType::Conflict));
                     continue;
                 }
+
+                // we have a correct version, so we're going to update the current_version to to the vcs_ref
+                current_version = haxelib.vcs_ref.as_ref().unwrap().to_string();
             }
             _ => {}
         }

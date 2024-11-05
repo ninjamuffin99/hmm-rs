@@ -4,12 +4,14 @@ use crate::hmm::haxelib::Haxelib;
 use crate::hmm::haxelib::HaxelibType;
 use anyhow::Ok;
 use anyhow::{anyhow, Context, Result};
+use bstr::BStr;
 use bstr::BString;
 use console::Emoji;
 use futures_util::StreamExt;
 use gix::clone;
 use gix::create;
 use gix::progress::Discard;
+use gix::ObjectId;
 use gix::Url;
 use human_bytes::human_bytes;
 use indicatif::{ProgressBar, ProgressStyle};
@@ -19,6 +21,7 @@ use std::io::Write;
 use std::num::NonZero;
 use std::path::Path;
 use std::path::PathBuf;
+use std::str::FromStr;
 use std::sync::atomic::AtomicBool;
 use yansi::Paint;
 use zip::ZipArchive;
@@ -75,7 +78,12 @@ pub fn handle_install(haxelib_status: &HaxelibStatus) -> Result<()> {
 pub fn install_from_git_using_gix_clone(haxelib: &Haxelib) -> Result<()> {
     println!("Installing {} from git using clone", haxelib.name);
 
-    let path_with_no_https = haxelib.url.as_ref().unwrap().replace("https://", "");
+    let haxelib_url = haxelib
+        .url
+        .as_ref()
+        .ok_or(anyhow!("No url provided for {}", haxelib.name))?;
+
+    let path_with_no_https = haxelib_url.replace("https://", "");
 
     let clone_url = Url::from_parts(
         gix::url::Scheme::Https,
@@ -86,10 +94,7 @@ pub fn install_from_git_using_gix_clone(haxelib: &Haxelib) -> Result<()> {
         BString::from(path_with_no_https),
         false,
     )
-    .context(format!(
-        "error creating gix url for {}",
-        haxelib.url.as_ref().unwrap()
-    ))?;
+    .context(format!("error creating gix url for {}", haxelib_url))?;
 
     let mut clone_path = PathBuf::from(".haxelib");
     clone_path = clone_path.join(&haxelib.name);
@@ -112,28 +117,41 @@ pub fn install_from_git_using_gix_clone(haxelib: &Haxelib) -> Result<()> {
         }
     };
 
-    let opts = create::Options {
-        destination_must_be_empty: false,
-        fs_capabilities: None,
-    };
-
     let mut da_fetch = clone::PrepareFetch::new(
         clone_url,
         clone_path,
         create::Kind::WithWorktree,
-        opts,
+        create::Options {
+            destination_must_be_empty: false,
+            fs_capabilities: None,
+        },
         gix::open::Options::default(),
     )
     .context("error preparing clone")?;
 
-    da_fetch = da_fetch.with_shallow(gix::remote::fetch::Shallow::DepthAtRemote(
-        NonZero::new(1).unwrap(),
-    ));
-    let mut da_checkout = da_fetch.fetch_then_checkout(Discard, &AtomicBool::new(false))?;
+    let mut da_checkout = da_fetch
+        .fetch_then_checkout(Discard, &AtomicBool::new(false))?
+        .0;
 
-    da_checkout
-        .0
-        .main_worktree(Discard, &AtomicBool::new(false))?;
+    let repo = da_checkout
+        .main_worktree(Discard, &AtomicBool::new(false))
+        .expect("Error checking out worktree")
+        .0;
+
+    match haxelib.vcs_ref.as_ref() {
+        Some(target_ref) => {
+            let reflog_msg = BString::from("derp?");
+
+            let target_object = ObjectId::from_str(target_ref)
+                .context(format!("error converting {} to ObjectId", target_ref))?;
+
+            repo.head_ref()
+                .unwrap()
+                .unwrap()
+                .set_target_id(target_object, reflog_msg)?;
+        }
+        None => (),
+    }
 
     Ok(())
 }

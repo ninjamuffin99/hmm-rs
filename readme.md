@@ -24,20 +24,21 @@ The below is a broad todo list / notes for myself.
   - [ ] Github Releases
 - [ ] Create tests against haxe `hmm`
 
+- [ ] Implement something to slowly roll out from hmm -> hmm-rs
+  - idea is to be able to integrate hmm with hmm-rs version, so certain commands get aliased. maybe need to make something on hmm haxe version perhaps to alias things?
+
 ### hmm commands to implement
 
 - [ ] install - installs libraries listed in hmm.json
   - [ ] haxelib
   - [ ] git
-    - Figure out how to use lib2git instead of gitoxide perhaps
     - allow writing / initalizing non-empty directories for clones?
     - instead of re-cloning, fetch and then check out specific commit
     - install with `--no-tags` for quicker install
   - [ ] check if version is already installed
 - [ ] from-hxml
 - [ ] reinstall
-  - this should function the way that `hmm reinstall -f` would, where it force reinstalls everything.
-    `hmm-rs install` should be used for cases when you updated your hmm.json manually or something
+  - this should function the way that `hmm reinstall -f` would, where it force reinstalls everything. `hmm-rs install` should be used for cases when you updated your hmm.json manually or something
 - [ ] haxelib
 - [ ] git
 - [ ] hg
