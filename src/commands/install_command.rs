@@ -138,20 +138,7 @@ pub fn install_from_git_using_gix_clone(haxelib: &Haxelib) -> Result<()> {
         .expect("Error checking out worktree")
         .0;
 
-    match haxelib.vcs_ref.as_ref() {
-        Some(target_ref) => {
-            let reflog_msg = BString::from("derp?");
-
-            let target_object = ObjectId::from_str(target_ref)
-                .context(format!("error converting {} to ObjectId", target_ref))?;
-
-            repo.head_ref()
-                .unwrap()
-                .unwrap()
-                .set_target_id(target_object, reflog_msg)?;
-        }
-        None => (),
-    }
+    do_commit_checkout(&repo, haxelib)?;
 
     Ok(())
 }
@@ -256,6 +243,55 @@ pub async fn install_from_haxelib(haxelib: &Haxelib) -> Result<()> {
 }
 
 pub fn install_from_git_using_gix_checkout(haxelib: &Haxelib) -> Result<()> {
+    println!("Updating {} from git using checkout", haxelib.name);
+
+    let discover_result = gix::discover(
+        &Path::new(".haxelib")
+            .join(haxelib.name.as_str())
+            .join("git"),
+    );
+
+    let repo = match discover_result {
+        core::result::Result::Ok(r) => r,
+        Err(e) => {
+            if e.to_string().contains("not a git repository") {
+                return install_from_git_using_gix_clone(haxelib);
+            } else {
+                return Err(anyhow!("Error discovering git repo: {:?}", e));
+            }
+        }
+    };
+
+    do_commit_checkout(&repo, haxelib)?;
+
+    println!(
+        "{}: {} updated {}",
+        haxelib.name.green().bold(),
+        haxelib.version.as_ref().unwrap().bright_green(),
+        Emoji("✅", "[✔️]")
+    );
+
+    Ok(())
+}
+
+fn do_commit_checkout(repo: &gix::Repository, haxelib: &Haxelib) -> Result<()> {
+    print!("Checking out {}", haxelib.name);
+    match haxelib.vcs_ref.as_ref() {
+        Some(target_ref) => {
+            println!(" at {}", target_ref);
+            let reflog_msg = BString::from("derp?");
+
+            let target_object = ObjectId::from_str(target_ref)
+                .context(format!("error converting {} to ObjectId", target_ref))?;
+
+            repo.head_ref()
+                .unwrap()
+                .unwrap()
+                .set_target_id(target_object, reflog_msg)?;
+        }
+        None => (),
+    }
+
     Ok(())
 }
 
