@@ -126,10 +126,20 @@ pub fn compare_haxelib_to_hmm(deps: &Dependancies) -> Result<Vec<HaxelibStatus>>
 
                 let branch_commit = head_ref.to_string();
 
-                if haxelib.vcs_ref.as_ref().unwrap() != &head_ref_string
-                    && (haxelib.vcs_ref.as_ref().unwrap() != &branch_name
-                        && haxelib.vcs_ref.as_ref().unwrap() != &branch_commit)
-                {
+                let intended_commit = haxelib.vcs_ref.as_ref().unwrap();
+
+                let proper_commit: Result<(), String> = match intended_commit {
+                    commit if head_ref_string.starts_with(commit) => core::result::Result::Ok(()),
+                    commit if !&branch_name.starts_with(commit) => {
+                        Err("doesn't match branch name".to_string())
+                    }
+                    commit if !&branch_commit.starts_with(commit) => {
+                        Err("doesn't match branch commit".to_string())
+                    }
+                    _ => core::result::Result::Ok(()),
+                };
+
+                if proper_commit.is_err() {
                     println!(
                         "{} {}",
                         haxelib.name.red().bold(),
