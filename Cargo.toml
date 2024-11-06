@@ -14,7 +14,7 @@ license = "MIT OR Apache-2.0"
 [dependencies]
 anyhow = "1.0.86"
 bstr = "1.9.1"
-clap = { version = "4.5.7", features = ["derive", "unicode", "wrap_help"] }
+clap = { version = "4.5.20", features = ["derive", "unicode", "wrap_help"] }
 console = "0.15.8"
 error-chain = "0.12.4"
 futures = "0.3.30"
@@ -24,16 +24,20 @@ gix = { version = "0.67.0", default-features = false, features = [
     "index",
     "blocking-network-client",
     "worktree-mutation",
-    "blocking-http-transport-curl",
+    "blocking-http-transport-reqwest-rust-tls",
     "status",
+    "parallel-walkdir",
+    "zlib-ng",
+    "serde",
+    "max-performance",
 ] }
 human_bytes = "0.4.3"
 indicatif = "0.17.8"
-reqwest = { version = "0.12.2", features = ["json", "stream"] }
+reqwest = { version = "0.12.9", features = ["json", "stream"] }
 serde = { version = "1.0.203", features = ["derive"] }
 serde_json = "1.0.118"
-tempfile = "3.10.1"
-tokio = { version = "1.38.0", features = ["full"] }
+tempfile = "3.13.0"
+tokio = { version = "1.41.0", features = ["full"] }
 yansi = "1.0.1"
 zip = "2.1.3"
 
