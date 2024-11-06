@@ -1,9 +1,12 @@
+use std::process::id;
+use std::str::FromStr;
 use std::{fs::File, path::Path};
 
 use crate::hmm::haxelib::{Haxelib, HaxelibType};
 use crate::hmm::{self, dependencies::Dependancies};
 use anyhow::{anyhow, Context, Result};
 use console::Emoji;
+use gix::ObjectId;
 use std::io::Read;
 use yansi::Paint;
 
@@ -115,7 +118,6 @@ pub fn compare_haxelib_to_hmm(deps: &Dependancies) -> Result<Vec<HaxelibStatus>>
                 let head_ref_string = head_ref.to_string();
 
                 current_version = head_ref_string.clone();
-
                 let branch_name = match repo.head_name()? {
                     Some(h) => {
                         current_version = h.shorten().to_string();
@@ -125,11 +127,11 @@ pub fn compare_haxelib_to_hmm(deps: &Dependancies) -> Result<Vec<HaxelibStatus>>
                 };
 
                 let branch_commit = head_ref.to_string();
-
                 let intended_commit = haxelib.vcs_ref.as_ref().unwrap();
 
                 let proper_commit: Result<(), String> = match intended_commit {
                     commit if head_ref_string.starts_with(commit) => core::result::Result::Ok(()),
+                    commit if &current_version == commit => core::result::Result::Ok(()),
                     commit if !&branch_name.starts_with(commit) => {
                         Err("doesn't match branch name".to_string())
                     }

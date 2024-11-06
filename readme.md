@@ -35,6 +35,7 @@ The below is a broad todo list / notes for myself.
     - allow writing / initalizing non-empty directories for clones?
     - install with `--no-tags` for quicker install?
     - check to see if repo is shallow or not, or maybe do a fetch before?
+    - support git tags
   - [ ] check if version is already installed
 - [~] check: shows info about the currently installed library, and what we want based on the hmm.json
   - git tags are sorta funky, try using hxcpp or something perhaps

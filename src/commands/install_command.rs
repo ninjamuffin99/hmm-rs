@@ -96,11 +96,13 @@ pub fn install_from_git_using_gix_clone(haxelib: &Haxelib) -> Result<()> {
     )
     .context(format!("error creating gix url for {}", haxelib_url))?;
 
-    let clone_path = PathBuf::from(".haxelib").join(&haxelib.name);
+    let mut clone_path = PathBuf::from(".haxelib").join(&haxelib.name);
 
     create_current_file(&clone_path, &String::from("git"))?;
 
-    match std::fs::create_dir_all(&clone_path.join("git")) {
+    clone_path = clone_path.join("git");
+
+    match std::fs::create_dir_all(&clone_path) {
         core::result::Result::Ok(_) => println!("Created directory: {:?}", clone_path.as_path()),
         Err(e) => {
             if e.kind() == std::io::ErrorKind::AlreadyExists {
@@ -122,15 +124,19 @@ pub fn install_from_git_using_gix_clone(haxelib: &Haxelib) -> Result<()> {
             destination_must_be_empty: false,
             fs_capabilities: None,
         },
-        gix::open::Options::default(),
+        gix::open::Options::default().cli_overrides(vec![String::from("fetch.recursive=true")]),
     )
     .context("error preparing clone")?;
 
-    let mut da_checkout = da_fetch
-        .fetch_then_checkout(Discard, &AtomicBool::new(false))?
-        .0;
+    if let Some(vcs_ref) = haxelib.vcs_ref.as_ref() {
+        da_fetch = da_fetch
+            .with_ref_name(Some(vcs_ref))
+            .context("error setting ref name")?;
+    }
 
-    let repo = da_checkout
+    let repo = da_fetch
+        .fetch_then_checkout(Discard, &AtomicBool::new(false))?
+        .0
         .main_worktree(Discard, &AtomicBool::new(false))
         .expect("Error checking out worktree")
         .0;

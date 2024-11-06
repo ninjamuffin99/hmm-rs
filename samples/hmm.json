@@ -1,18 +1,25 @@
 {
   "dependencies": [
     {
-      "name": "flixel",
+      "name": "hxCodec",
       "type": "git",
       "dir": null,
-      "ref": "5823c46b4e7410372d58b99f8d5c52fc18b3cb3d",
-      "url": "https://github.com/FunkinCrew/flixel"
+      "ref": "61b98a7a353b7f529a8fec84ed9afc919a2dffdd",
+      "url": "https://github.com/FunkinCrew/hxCodec"
     },
     {
-      "name": "openfl",
+      "name": "lime",
       "type": "git",
       "dir": null,
-      "ref": "de9465811dc5da14c05435ff64783b1d5305b9da",
-      "url": "https://github.com/openfl/openfl"
+      "ref": "9478698b35fb518e98b5189376226f384ccc256a",
+      "url": "https://github.com/FunkinCrew/lime"
+    },
+    {
+      "name": "hxcpp",
+      "type": "git",
+      "dir": null,
+      "ref": "v4.3.68",
+      "url": "https://github.com/HaxeFoundation/hxcpp"
     }
   ]
 }
