@@ -96,14 +96,11 @@ pub fn install_from_git_using_gix_clone(haxelib: &Haxelib) -> Result<()> {
     )
     .context(format!("error creating gix url for {}", haxelib_url))?;
 
-    let mut clone_path = PathBuf::from(".haxelib");
-    clone_path = clone_path.join(&haxelib.name);
+    let clone_path = PathBuf::from(".haxelib").join(&haxelib.name);
 
     create_current_file(&clone_path, &String::from("git"))?;
 
-    clone_path = clone_path.join("git");
-
-    match std::fs::create_dir_all(&clone_path) {
+    match std::fs::create_dir_all(&clone_path.join("git")) {
         core::result::Result::Ok(_) => println!("Created directory: {:?}", clone_path.as_path()),
         Err(e) => {
             if e.kind() == std::io::ErrorKind::AlreadyExists {
