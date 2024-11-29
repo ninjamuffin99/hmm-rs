@@ -31,6 +31,7 @@ The below is a broad todo list / notes for myself.
 
 - [ ] install - installs libraries listed in hmm.json
   - [ ] haxelib: installs from lib.haxe.org
+    - mostly done, last bit i need to do (which is a bit annoying) is to implement api calls to the haxelib server, so we can properly resolve the latest version if none are provided. This entails crazy
   - [ ] git: installs from a git based source
     - allow writing / initalizing non-empty directories for clones?
     - install with `--no-tags` for quicker install?
