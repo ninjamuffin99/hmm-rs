@@ -30,6 +30,8 @@ gix = { version = "0.67.0", default-features = false, features = [
     "zlib-ng",
     "serde",
     "max-performance",
+    "verbose-object-parsing-errors",
+    "tracing-detail",
 ] }
 haxeformat = "0.2.3"
 human_bytes = "0.4.3"

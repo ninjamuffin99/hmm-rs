@@ -10,7 +10,12 @@ use console::Emoji;
 use futures_util::StreamExt;
 use gix::clone;
 use gix::create;
+use gix::discover::repository;
+use gix::open;
+use gix::progress;
 use gix::progress::Discard;
+use gix::submodule;
+use gix::Id;
 use gix::ObjectId;
 use gix::Url;
 use human_bytes::human_bytes;
@@ -120,19 +125,10 @@ pub fn install_from_git_using_gix_clone(haxelib: &Haxelib) -> Result<()> {
         clone_url,
         clone_path,
         create::Kind::WithWorktree,
-        create::Options {
-            destination_must_be_empty: false,
-            fs_capabilities: None,
-        },
-        gix::open::Options::default().cli_overrides(vec![String::from("fetch.recursive=true")]),
+        create::Options::default(),
+        gix::open::Options::default(),
     )
     .context("error preparing clone")?;
-
-    if let Some(vcs_ref) = haxelib.vcs_ref.as_ref() {
-        da_fetch = da_fetch
-            .with_ref_name(Some(vcs_ref))
-            .context("error setting ref name")?;
-    }
 
     let repo = da_fetch
         .fetch_then_checkout(Discard, &AtomicBool::new(false))?
@@ -140,6 +136,16 @@ pub fn install_from_git_using_gix_clone(haxelib: &Haxelib) -> Result<()> {
         .main_worktree(Discard, &AtomicBool::new(false))
         .expect("Error checking out worktree")
         .0;
+
+    let submodule_result = repo.submodules()?;
+
+    if let Some(submodule_list) = submodule_result {
+        for submodule in submodule_list {
+            let submodule_path = submodule.path()?;
+            let submodule_url = submodule.url()?;
+            println!("Submodule: {} - {}", submodule_path, submodule_url);
+        }
+    }
 
     do_commit_checkout(&repo, haxelib)?;
 
@@ -265,12 +271,18 @@ pub fn install_from_git_using_gix_checkout(haxelib: &Haxelib) -> Result<()> {
         }
     };
 
+    // let fetch_url = repo
+    //     .find_fetch_remote(None)?
+    //     .url(gix::remote::Direction::Fetch)
+    //     .unwrap()
+    //     .clone();
+
     do_commit_checkout(&repo, haxelib)?;
 
     println!(
         "{}: {} updated {}",
         haxelib.name.green().bold(),
-        haxelib.version.as_ref().unwrap().bright_green(),
+        haxelib.vcs_ref.as_ref().unwrap().bright_green(),
         Emoji("✅", "[✔️]")
     );
 
@@ -284,13 +296,12 @@ fn do_commit_checkout(repo: &gix::Repository, haxelib: &Haxelib) -> Result<()> {
             println!(" at {}", target_ref);
             let reflog_msg = BString::from("derp?");
 
-            let target_object = ObjectId::from_str(target_ref)
-                .context(format!("error converting {} to ObjectId", target_ref))?;
+            let target_gix_ref = repo.find_reference(target_ref)?.id();
 
             repo.head_ref()
                 .unwrap()
                 .unwrap()
-                .set_target_id(target_object, reflog_msg)?;
+                .set_target_id(target_gix_ref, reflog_msg)?;
         }
         None => (),
     }

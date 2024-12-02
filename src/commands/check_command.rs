@@ -5,8 +5,9 @@ use std::{fs::File, path::Path};
 use crate::hmm::haxelib::{Haxelib, HaxelibType};
 use crate::hmm::{self, dependencies::Dependancies};
 use anyhow::{anyhow, Context, Result};
+use bstr::BStr;
 use console::Emoji;
-use gix::ObjectId;
+use gix::{Object, ObjectId};
 use std::io::Read;
 use yansi::Paint;
 
@@ -95,76 +96,48 @@ pub fn compare_haxelib_to_hmm(deps: &Dependancies) -> Result<Vec<HaxelibStatus>>
             }
             HaxelibType::Git => {
                 let repo_path = haxelib_path.join("git");
-                let repo = gix::discover(&repo_path)
-                    .context(anyhow!("Could not find git repo {:?}", repo_path))?;
-                let head_ref = match repo.head_id() {
-                    Ok(h) => h,
+
+                let repo = match gix::discover(&repo_path) {
+                    Ok(r) => r,
                     Err(e) => {
-                        println!(
-                            "{} {}",
-                            haxelib.name.red().bold(),
-                            "is not at the correct version".red()
-                        );
-                        println!("Error: {}", e);
+                        println!("{}", e.to_string().red());
                         println!(
                             "Expected: {} | Installed: {}",
                             haxelib.vcs_ref.as_ref().unwrap().red(),
-                            "unknown".red()
+                            "None".red()
                         );
-                        install_status.push(HaxelibStatus::new(haxelib, InstallType::Outdated));
+                        install_status.push(HaxelibStatus::new(haxelib, InstallType::Missing));
                         continue;
                     }
                 };
-                let head_ref_string = head_ref.to_string();
 
-                current_version = head_ref_string.clone();
-                let branch_name = match repo.head_name()? {
-                    Some(h) => {
-                        current_version = h.shorten().to_string();
-                        h.shorten().to_string()
+                let head_ref = repo.head_ref()?.unwrap();
+
+                // If our head ref is a tag or branch, we check if we already have it in our history
+                // If it's not a tag, we check via commit id
+                let intended_commit = match repo.find_reference(haxelib.vcs_ref.as_ref().unwrap()) {
+                    Ok(r) => r.id(),
+                    Err(_) => {
+                        let commit = repo.find_commit(
+                            ObjectId::from_str(haxelib.vcs_ref.as_ref().unwrap())
+                                .expect("Commit Tag improperly setup?"),
+                        );
+                        commit.unwrap().id()
                     }
-                    None => String::new(),
                 };
 
-                let branch_commit = head_ref.to_string();
-                let intended_commit = haxelib.vcs_ref.as_ref().unwrap();
-
-                let proper_commit: Result<(), String> = match intended_commit {
-                    commit if head_ref_string.starts_with(commit) => core::result::Result::Ok(()),
-                    commit if &current_version == commit => core::result::Result::Ok(()),
-                    commit if !&branch_name.starts_with(commit) => {
-                        Err("doesn't match branch name".to_string())
-                    }
-                    commit if !&branch_commit.starts_with(commit) => {
-                        Err("doesn't match branch commit".to_string())
-                    }
-                    _ => core::result::Result::Ok(()),
-                };
-
-                if proper_commit.is_err() {
+                if head_ref.id() != intended_commit {
                     println!(
                         "{} {}",
                         haxelib.name.red().bold(),
                         "is not at the correct version".red()
                     );
 
-                    let mut output = String::new();
-
-                    // if branch_name is empty, then it's a detached head/specific commit
-                    match branch_name.as_str() {
-                        "" => {
-                            output.push_str(&head_ref_string);
-                        }
-                        _ => {
-                            output.push_str(&branch_name);
-                        }
-                    }
-
                     println!(
                         "Expected: {} | Installed: {} at {}",
                         haxelib.vcs_ref.as_ref().unwrap().red(),
-                        output.red(),
-                        branch_commit.red()
+                        head_ref.name().shorten().red(),
+                        head_ref.id().red()
                     );
 
                     install_status.push(HaxelibStatus::new(haxelib, InstallType::Outdated));
