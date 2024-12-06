@@ -1,13 +1,10 @@
-use std::process::id;
-use std::str::FromStr;
 use std::{fs::File, path::Path};
 
 use crate::hmm::haxelib::{Haxelib, HaxelibType};
 use crate::hmm::{self, dependencies::Dependancies};
 use anyhow::{anyhow, Context, Result};
-use bstr::BStr;
 use console::Emoji;
-use gix::{Object, ObjectId};
+use gix::hash::Prefix;
 use std::io::Read;
 use yansi::Paint;
 
@@ -111,22 +108,22 @@ pub fn compare_haxelib_to_hmm(deps: &Dependancies) -> Result<Vec<HaxelibStatus>>
                     }
                 };
 
-                let head_ref = repo.head_ref()?.unwrap();
+                // TODO: Need to make sure this unwraps for detatched head!
+                let head_ref = repo.head_commit().unwrap();
 
                 // If our head ref is a tag or branch, we check if we already have it in our history
                 // If it's not a tag, we check via commit id
                 let intended_commit = match repo.find_reference(haxelib.vcs_ref.as_ref().unwrap()) {
-                    Ok(r) => r.id(),
-                    Err(_) => {
-                        let commit = repo.find_commit(
-                            ObjectId::from_str(haxelib.vcs_ref.as_ref().unwrap())
-                                .expect("Commit Tag improperly setup?"),
-                        );
-                        commit.unwrap().id()
-                    }
+                    Ok(r) => r.id().shorten_or_id(),
+                    Err(_) => Prefix::from_hex(haxelib.vcs_ref.as_ref().unwrap())?,
                 };
 
-                if head_ref.id() != intended_commit {
+                if head_ref
+                    .id()
+                    .shorten_or_id()
+                    .cmp_oid(intended_commit.as_oid())
+                    .is_ne()
+                {
                     println!(
                         "{} {}",
                         haxelib.name.red().bold(),
@@ -136,7 +133,7 @@ pub fn compare_haxelib_to_hmm(deps: &Dependancies) -> Result<Vec<HaxelibStatus>>
                     println!(
                         "Expected: {} | Installed: {} at {}",
                         haxelib.vcs_ref.as_ref().unwrap().red(),
-                        head_ref.name().shorten().red(),
+                        head_ref.shorten().red(),
                         head_ref.id().red()
                     );
 
