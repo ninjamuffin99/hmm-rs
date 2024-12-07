@@ -32,11 +32,16 @@ pub fn check() -> Result<()> {
     let deps = hmm::json::read_json("hmm.json")?;
 
     match compare_haxelib_to_hmm(&deps)? {
-        installs => println!(
-            "{} / {} dependencie(s) are installed at the correct versions",
-            deps.dependencies.len() - installs.len(),
-            deps.dependencies.len()
-        ),
+        installs => {
+            println!(
+                "{} / {} dependencie(s) are installed at the correct versions",
+                installs
+                    .iter()
+                    .filter(|i| i.install_type == InstallType::AlreadyInstalled)
+                    .count(),
+                deps.dependencies.len()
+            );
+        }
     }
     Ok(())
 }
@@ -133,7 +138,7 @@ pub fn compare_haxelib_to_hmm(deps: &Dependancies) -> Result<Vec<HaxelibStatus>>
                     println!(
                         "Expected: {} | Installed: {} at {}",
                         haxelib.vcs_ref.as_ref().unwrap().red(),
-                        head_ref.shorten().red(),
+                        head_ref.id().shorten_or_id().red(),
                         head_ref.id().red()
                     );
 
