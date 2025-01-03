@@ -4,7 +4,10 @@ use reqwest::blocking::Client;
 
 use crate::{
     commands,
-    hmm::haxelib::{self, Haxelib, HaxelibType},
+    hmm::{
+        self,
+        haxelib::{self, Haxelib, HaxelibType},
+    },
 };
 
 pub fn install_haxelib(name: &str, version: &Option<String>) -> Result<()> {
@@ -50,5 +53,8 @@ pub fn install_haxelib(name: &str, version: &Option<String>) -> Result<()> {
         }
     };
     commands::install_command::install_from_haxelib(&haxelib_install)?;
+    let mut hmm_deps = hmm::json::read_json("./hmm.json")?;
+    hmm_deps.dependencies.push(haxelib_install);
+    hmm::json::save_json(hmm_deps, "./hmm.json")?;
     Ok(())
 }

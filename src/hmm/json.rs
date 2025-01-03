@@ -5,7 +5,7 @@ use super::dependencies::Dependancies;
 use anyhow::{Context, Result};
 
 pub fn save_json(deps: Dependancies, path: &str) -> Result<()> {
-    println!("Saving to {}", path);
+    println!("{} saved/updated", path);
     let j = serde_json::to_string_pretty(&deps)?;
     let mut file = File::create(path)?;
     file.write_all(j.as_bytes())?;
