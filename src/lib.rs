@@ -14,7 +14,7 @@ struct Args {
     cmd: Commands,
 
     /// Sets a custom hmm.json file to use
-    #[arg(short, long, value_name = "JSON")]
+    #[arg(short, long, value_name = "JSON", default_value = "hmm.json")]
     json: Option<PathBuf>,
 }
 
@@ -54,11 +54,7 @@ enum Commands {
 pub fn run() -> Result<()> {
     let args = Args::parse();
 
-    let path = if let Some(hmm) = args.json {
-        hmm
-    } else {
-        PathBuf::from("hmm.json")
-    };
+    let path = args.json.unwrap();
 
     let deps = hmm::json::read_json(&path)?;
 
@@ -75,4 +71,10 @@ pub fn run() -> Result<()> {
         Commands::Remove { lib: _ } => commands::remove_command::remove_haxelibs()?,
     }
     Ok(())
+}
+
+#[test]
+fn verify_cli() {
+    use clap::CommandFactory;
+    Args::command().debug_assert();
 }
