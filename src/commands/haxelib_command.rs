@@ -1,7 +1,6 @@
 use std::path::PathBuf;
 
 use anyhow::{anyhow, Ok, Result};
-use gix::actor::signature::decode;
 use reqwest::blocking::Client;
 
 use crate::{
@@ -9,8 +8,7 @@ use crate::{
     hmm::{
         self,
         dependencies::Dependancies,
-        haxelib::{self, Haxelib, HaxelibType},
-        json,
+        haxelib::{Haxelib, HaxelibType},
     },
 };
 
@@ -54,7 +52,7 @@ pub fn install_haxelib(
 
             println!("Latest version of {} is {}", name, decoded_resp);
 
-            if (decoded_resp.starts_with("No such Project")) {
+            if decoded_resp.starts_with("No such Project") {
                 return Err(anyhow!("{}", decoded_resp)); // this haxelib doesn't exist
             }
 

@@ -1,5 +1,4 @@
 use crate::commands::check_command::InstallType;
-use crate::hmm;
 use crate::hmm::dependencies::Dependancies;
 use crate::hmm::haxelib::Haxelib;
 use crate::hmm::haxelib::HaxelibType;

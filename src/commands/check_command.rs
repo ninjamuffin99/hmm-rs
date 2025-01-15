@@ -1,7 +1,7 @@
 use std::{fs::File, path::Path};
 
 use crate::hmm::haxelib::{Haxelib, HaxelibType};
-use crate::hmm::{self, dependencies::Dependancies};
+use crate::hmm::{dependencies::Dependancies};
 use anyhow::{anyhow, Context, Result};
 use console::Emoji;
 use gix::hash::Prefix;

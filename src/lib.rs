@@ -72,7 +72,7 @@ pub fn run() -> Result<()> {
         Commands::Haxelib { name, version } => {
             commands::haxelib_command::install_haxelib(&name, &version, deps, path)?
         }
-        Commands::Remove { lib } => commands::remove_command::remove_haxelibs()?,
+        Commands::Remove { lib: _ } => commands::remove_command::remove_haxelibs()?,
     }
     Ok(())
 }

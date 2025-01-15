@@ -1,4 +1,4 @@
-use anyhow::{anyhow, Context, Result};
+use anyhow::Result;
 
 pub fn remove_haxelibs() -> Result<()> {
     Ok(())
