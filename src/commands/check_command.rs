@@ -28,9 +28,7 @@ impl<'a> HaxelibStatus<'a> {
     }
 }
 
-pub fn check() -> Result<()> {
-    let deps = hmm::json::read_json("hmm.json")?;
-
+pub fn check(deps: &Dependancies) -> Result<()> {
     match compare_haxelib_to_hmm(&deps)? {
         installs => {
             println!(

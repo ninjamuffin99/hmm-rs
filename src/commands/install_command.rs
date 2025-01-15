@@ -1,5 +1,6 @@
 use crate::commands::check_command::InstallType;
 use crate::hmm;
+use crate::hmm::dependencies::Dependancies;
 use crate::hmm::haxelib::Haxelib;
 use crate::hmm::haxelib::HaxelibType;
 use anyhow::Ok;
@@ -25,9 +26,7 @@ use zip::ZipArchive;
 use super::check_command::compare_haxelib_to_hmm;
 use super::check_command::HaxelibStatus;
 
-pub fn install_from_hmm() -> Result<()> {
-    let deps = hmm::json::read_json("hmm.json")?;
-
+pub fn install_from_hmm(deps: &Dependancies) -> Result<()> {
     let installs_needed = compare_haxelib_to_hmm(&deps)?;
     println!(
         "{} dependencies need to be installed",

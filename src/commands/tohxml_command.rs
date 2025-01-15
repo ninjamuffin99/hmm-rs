@@ -1,9 +1,8 @@
+use crate::hmm::dependencies::Dependancies;
 use crate::hmm::haxelib::HaxelibType;
-use crate::hmm::json::read_json;
 use anyhow::Result;
 
-pub fn dump_to_hxml() -> Result<()> {
-    let deps = read_json("hmm.json")?;
+pub fn dump_to_hxml(deps: &Dependancies) -> Result<()> {
     let mut hxml = String::new();
     for haxelib in deps.dependencies.iter() {
         let mut lib_string = String::from("-lib ");

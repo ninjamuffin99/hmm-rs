@@ -30,8 +30,7 @@ The below is a broad todo list / notes for myself.
 ### hmm command and notes
 
 - [ ] install - installs libraries listed in hmm.json
-  - [ ] haxelib: installs from lib.haxe.org
-    - mostly done, last bit i need to do (which is a bit annoying) is to implement api calls to the haxelib server, so we can properly resolve the latest version if none are provided. This entails crazy
+  - [x] haxelib: installs from lib.haxe.org
   - [ ] git: installs from a git based source
     - allow writing / initalizing non-empty directories for clones?
     - install with `--no-tags` for quicker install?
@@ -45,12 +44,16 @@ The below is a broad todo list / notes for myself.
 - [ ] from-hxml
 - [ ] reinstall
   - this should function the way that `hmm reinstall -f` would, where it force reinstalls everything. `hmm-rs install` should be used for cases when you updated your hmm.json manually or something
-- [ ] haxelib
+- [x] haxelib
 - [ ] git
 - [ ] hg
   - probably not planned since I don't use mecurial personally or know any haxelib repos that do!
 - [ ] dev
 - [ ] update
 - [ ] remove
+  - Add the command simply
+  - create the .rs file
+  - Remove the library from `hmm.json`
+  - Remove the directory from `.haxelib` folder
 - [ ] lock
   - how much depth should this go to for dependencies?

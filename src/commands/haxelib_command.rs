@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 use anyhow::{anyhow, Ok, Result};
 use gix::actor::signature::decode;
 use reqwest::blocking::Client;
@@ -6,11 +8,18 @@ use crate::{
     commands,
     hmm::{
         self,
+        dependencies::Dependancies,
         haxelib::{self, Haxelib, HaxelibType},
+        json,
     },
 };
 
-pub fn install_haxelib(name: &str, version: &Option<String>) -> Result<()> {
+pub fn install_haxelib(
+    name: &str,
+    version: &Option<String>,
+    mut deps: Dependancies,
+    json_path: PathBuf,
+) -> Result<()> {
     let mut haxelib_install = Haxelib {
         name: name.to_string(),
         haxelib_type: HaxelibType::Haxelib,
@@ -53,8 +62,7 @@ pub fn install_haxelib(name: &str, version: &Option<String>) -> Result<()> {
         }
     };
     commands::install_command::install_from_haxelib(&haxelib_install)?;
-    let mut hmm_deps = hmm::json::read_json("./hmm.json")?;
-    hmm_deps.dependencies.push(haxelib_install);
-    hmm::json::save_json(hmm_deps, "./hmm.json")?;
+    deps.dependencies.push(haxelib_install);
+    hmm::json::save_json(deps, json_path)?;
     Ok(())
 }
