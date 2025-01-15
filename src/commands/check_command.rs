@@ -1,7 +1,7 @@
 use std::{fs::File, path::Path};
 
+use crate::hmm::dependencies::Dependancies;
 use crate::hmm::haxelib::{Haxelib, HaxelibType};
-use crate::hmm::{dependencies::Dependancies};
 use anyhow::{anyhow, Context, Result};
 use console::Emoji;
 use gix::hash::Prefix;
@@ -17,6 +17,7 @@ pub struct HaxelibStatus<'a> {
 #[derive(Debug, PartialEq)]
 pub enum InstallType {
     Missing,          // Needs to be installed
+    MissingGit,       // Needs to be cloned
     Outdated,         // Installed but wrong version
     AlreadyInstalled, // Correctly installed
     Conflict,         // Version conflicts between dependencies
@@ -96,6 +97,21 @@ pub fn compare_haxelib_to_hmm(deps: &Dependancies) -> Result<Vec<HaxelibStatus>>
             }
             HaxelibType::Git => {
                 let repo_path = haxelib_path.join("git");
+
+                if !repo_path.exists() {
+                    println!(
+                        "{} {}",
+                        haxelib.name.red().bold(),
+                        "is not cloned / installed (via git)".red()
+                    );
+                    println!(
+                        "Expected: {} | Installed: {}",
+                        haxelib.vcs_ref.as_ref().unwrap().red(),
+                        "None".red()
+                    );
+                    install_status.push(HaxelibStatus::new(haxelib, InstallType::MissingGit));
+                    continue;
+                }
 
                 let repo = match gix::discover(&repo_path) {
                     Ok(r) => r,
