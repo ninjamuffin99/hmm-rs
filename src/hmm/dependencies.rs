@@ -15,10 +15,13 @@ impl fmt::Display for Dependancies {
 }
 
 impl Dependancies {
-    pub fn print_string_list(&self, lib: &Option<String>) -> Result<()> {
-        if let Some(lib) = lib {
-            let haxelib = Self::get_haxelib(self, lib)?;
-            Self::print_haxelib(&haxelib);
+    pub fn print_string_list(&self, libs: &Option<Vec<String>>) -> Result<()> {
+        if let Some(libs) = libs {
+            for lib in libs {
+                let haxelib = Self::get_haxelib(self, lib)?;
+                Self::print_haxelib(&haxelib);
+            }
+
             return Ok(());
         }
 

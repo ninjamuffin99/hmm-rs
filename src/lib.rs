@@ -23,8 +23,10 @@ enum Commands {
     /// Lists the dependencies in the hmm.json file (or a file of your choice with --path)
     /// use `hmm-rs check` to see if the dependencies are installed at the correct versions
     List {
-        #[arg(short, long)]
-        lib: Option<String>,
+        /// Specific libraries you want to list, can be multiple
+        /// `hmm-rs list lime openfl` will list lime and openfl
+        #[arg(value_name = "LIBS")]
+        lib: Option<Vec<String>>,
     },
     /// Creates an empty .haxelib/ folder, and an empty hmm.json file
     Init,
@@ -45,9 +47,9 @@ enum Commands {
     },
     /// Removes one or more library dependencies from `hmm.json` and the `.haxelib/` folder
     Remove {
-        /// The library you wish to remove
+        /// The library(s) you wish to remove
         #[arg(short, long)]
-        lib: String,
+        lib: Vec<String>,
     },
 }
 
