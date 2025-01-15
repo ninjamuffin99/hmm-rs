@@ -1,8 +1,10 @@
+use std::path::PathBuf;
+
 use crate::hmm::dependencies::Dependancies;
 use crate::hmm::haxelib::HaxelibType;
 use anyhow::Result;
 
-pub fn dump_to_hxml(deps: &Dependancies) -> Result<()> {
+pub fn dump_to_hxml(deps: &Dependancies, hxml_out: Option<PathBuf>) -> Result<()> {
     let mut hxml = String::new();
     for haxelib in deps.dependencies.iter() {
         let mut lib_string = String::from("-lib ");
@@ -24,6 +26,12 @@ pub fn dump_to_hxml(deps: &Dependancies) -> Result<()> {
         hxml.push_str(&lib_string);
         hxml.push_str("\n");
     }
-    println!("{}", hxml);
+
+    if let Some(hxml_out) = hxml_out {
+        std::fs::write(hxml_out, hxml)?;
+    } else {
+        println!("{}", hxml);
+    }
+
     Ok(())
 }

@@ -9,7 +9,7 @@ use clap::{Parser, Subcommand};
 
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
-struct Args {
+struct Cli {
     #[command(subcommand)]
     cmd: Commands,
 
@@ -22,6 +22,7 @@ struct Args {
 enum Commands {
     /// Lists the dependencies in the hmm.json file (or a file of your choice with --path)
     /// use `hmm-rs check` to see if the dependencies are installed at the correct versions
+    #[command(visible_alias = "ls")]
     List {
         /// Specific libraries you want to list, can be multiple
         /// `hmm-rs list lime openfl` will list lime and openfl
@@ -31,12 +32,18 @@ enum Commands {
     /// Creates an empty .haxelib/ folder, and an empty hmm.json file
     Init,
     /// Removes local .haxelib directory, useful for full clean reinstalls
+    #[command(visible_alias = "cl")]
     Clean,
-    /// dumps the dependencies in hmm.json to a hxml file
-    ToHxml,
+    /// dumps the dependencies in hmm.json, either to a .hxml file or stdout
+    ToHxml {
+        /// The path to the hxml file you want to write to
+        #[arg(value_name = "HXML")]
+        hxml: Option<PathBuf>,
+    },
     /// Checks if the dependencies are installed at their correct hmm.json versions
     Check,
     /// Installs the dependencies from hmm.json, if they aren't already installed.
+    #[command(visible_alias = "i")]
     Install,
     /// Installs a haxelib from lib.haxe.org
     Haxelib {
@@ -46,25 +53,25 @@ enum Commands {
         version: Option<String>,
     },
     /// Removes one or more library dependencies from `hmm.json` and the `.haxelib/` folder
+    #[command(visible_alias = "rm")]
     Remove {
-        /// The library(s) you wish to remove
-        #[arg(short, long)]
+        /// The library(s) you wish to remove, can be multiple
+        #[arg(value_name = "LIBS")]
         lib: Vec<String>,
     },
 }
 
 pub fn run() -> Result<()> {
-    let args = Args::parse();
+    let args = Cli::parse();
 
     let path = args.json.unwrap();
-
     let deps = hmm::json::read_json(&path)?;
 
     match args.cmd {
         Commands::List { lib } => hmm::json::read_json(&path)?.print_string_list(&lib)?,
         Commands::Init => commands::init_command::init_hmm()?,
         Commands::Clean => commands::clean_command::remove_haxelib_folder()?,
-        Commands::ToHxml => commands::tohxml_command::dump_to_hxml(&deps)?,
+        Commands::ToHxml { hxml } => commands::tohxml_command::dump_to_hxml(&deps, hxml)?,
         Commands::Check => commands::check_command::check(&deps)?,
         Commands::Install => commands::install_command::install_from_hmm(&deps)?,
         Commands::Haxelib { name, version } => {
@@ -78,5 +85,5 @@ pub fn run() -> Result<()> {
 #[test]
 fn verify_cli() {
     use clap::CommandFactory;
-    Args::command().debug_assert();
+    Cli::command().debug_assert();
 }
