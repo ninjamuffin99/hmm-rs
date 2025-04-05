@@ -41,6 +41,7 @@ enum Commands {
         hxml: Option<PathBuf>,
     },
     /// Checks if the dependencies are installed at their correct hmm.json versions
+    #[command(visible_alias = "ch")]
     Check,
     /// Installs the dependencies from hmm.json, if they aren't already installed.
     #[command(visible_alias = "i")]
