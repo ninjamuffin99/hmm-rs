@@ -26,7 +26,7 @@ use super::check_command::compare_haxelib_to_hmm;
 use super::check_command::HaxelibStatus;
 
 pub fn install_from_hmm(deps: &Dependancies) -> Result<()> {
-    let installs_needed = compare_haxelib_to_hmm(&deps)?;
+    let installs_needed = compare_haxelib_to_hmm(deps)?;
     println!(
         "{} dependencies need to be installed",
         installs_needed.len().to_string().bold()
@@ -146,9 +146,9 @@ pub async fn install_from_haxelib(haxelib: &Haxelib) -> Result<()> {
     // braindead...
     let mut target_url = String::from("https://lib.haxe.org/p/");
     target_url.push_str(haxelib.name.as_str());
-    target_url.push_str("/");
+    target_url.push('/');
     target_url.push_str(haxelib.version.as_ref().unwrap().as_str());
-    target_url.push_str("/");
+    target_url.push('/');
     target_url.push_str("download");
 
     println!(
@@ -228,7 +228,7 @@ pub async fn install_from_haxelib(haxelib: &Haxelib) -> Result<()> {
     // removing the zip file
     print!("Deleting temp file: {:?}", tmp_dir.as_path());
     std::fs::remove_file(tmp_dir.as_path())?;
-    println!("");
+    println!();
     println!(
         "{}: {} installed {}",
         haxelib.name.green().bold(),
@@ -236,7 +236,7 @@ pub async fn install_from_haxelib(haxelib: &Haxelib) -> Result<()> {
         Emoji("✅", "[✔️]")
     );
     // print an empty line, for readability between downloads
-    println!("");
+    println!();
     Ok(())
 }
 
@@ -244,7 +244,7 @@ pub fn install_from_git_using_gix_checkout(haxelib: &Haxelib) -> Result<()> {
     println!("Updating {} from git using checkout", haxelib.name);
 
     let discover_result = gix::discover(
-        &Path::new(".haxelib")
+        Path::new(".haxelib")
             .join(haxelib.name.as_str())
             .join("git"),
     );
@@ -280,19 +280,16 @@ pub fn install_from_git_using_gix_checkout(haxelib: &Haxelib) -> Result<()> {
 
 fn do_commit_checkout(repo: &gix::Repository, haxelib: &Haxelib) -> Result<()> {
     print!("Checking out {}", haxelib.name);
-    match haxelib.vcs_ref.as_ref() {
-        Some(target_ref) => {
-            println!(" at {}", target_ref);
-            let reflog_msg = BString::from("derp?");
+    if let Some(target_ref) = haxelib.vcs_ref.as_ref() {
+        println!(" at {}", target_ref);
+        let reflog_msg = BString::from("derp?");
 
-            let target_gix_ref = repo.find_reference(target_ref)?.id();
+        let target_gix_ref = repo.find_reference(target_ref)?.id();
 
-            repo.head_ref()
-                .unwrap()
-                .unwrap()
-                .set_target_id(target_gix_ref, reflog_msg)?;
-        }
-        None => (),
+        repo.head_ref()
+            .unwrap()
+            .unwrap()
+            .set_target_id(target_gix_ref, reflog_msg)?;
     }
 
     Ok(())

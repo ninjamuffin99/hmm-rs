@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use common::{remove_haxelib_folder, setup_haxelib_folder};
+use common::remove_haxelib_folder;
 use hmm_rs::{
     commands::{self, *},
     hmm,

@@ -1,6 +1,6 @@
 use std::{
     fs,
-    path::{Path, PathBuf},
+    path::PathBuf,
 };
 
 use yansi::Paint;
@@ -23,7 +23,6 @@ pub fn remove_haxelib_folder() {
                 "Error".red().bold(),
                 e
             );
-            return;
         }
     }
 }

@@ -19,7 +19,7 @@ impl Dependancies {
         if let Some(libs) = libs {
             for lib in libs {
                 let haxelib = Self::get_haxelib(self, lib)?;
-                Self::print_haxelib(&haxelib);
+                Self::print_haxelib(haxelib);
             }
 
             return Ok(());
@@ -45,7 +45,7 @@ impl Dependancies {
             Some(v) => format!("version: {}", v),
             None => match &lib.vcs_ref {
                 Some(r) => format!("ref: {}", r),
-                None => format!("No version or ref"),
+                None => "No version or ref".to_string(),
             },
         };
 
@@ -57,10 +57,7 @@ impl Dependancies {
         );
 
         match lib.haxelib_type {
-            HaxelibType::Git => match &lib.url {
-                Some(u) => haxelib_output.push_str(&format!("url: {}\n", u)),
-                None => {}
-            },
+            HaxelibType::Git => if let Some(u) = &lib.url { haxelib_output.push_str(&format!("url: {}\n", u)) },
             HaxelibType::Haxelib => {
                 let haxelib_url = format!("https://lib.haxe.org/p/{}", lib.name);
                 haxelib_output.push_str(&format!("url: {}\n", haxelib_url))

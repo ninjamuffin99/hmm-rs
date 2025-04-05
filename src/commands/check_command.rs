@@ -30,7 +30,7 @@ impl<'a> HaxelibStatus<'a> {
 }
 
 pub fn check(deps: &Dependancies) -> Result<()> {
-    match compare_haxelib_to_hmm(&deps)? {
+    match compare_haxelib_to_hmm(deps)? {
         installs => {
             println!(
                 "{} / {} dependencie(s) are installed at the correct versions",
