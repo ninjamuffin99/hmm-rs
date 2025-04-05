@@ -19,14 +19,13 @@ console = "0.15.8"
 error-chain = "0.12.4"
 futures = "0.3.30"
 futures-util = "0.3.30"
-gix = { version = "0.69.0", default-features = false, features = [
+gix = { version = "0.71.0", default-features = false, features = [
     "revision",
     "index",
     "blocking-network-client",
     "worktree-mutation",
     "blocking-http-transport-reqwest-rust-tls",
     "status",
-    "parallel-walkdir",
     "zlib-ng",
     "serde",
     "max-performance",
