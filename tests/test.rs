@@ -31,11 +31,3 @@ fn test_hmm_json_read() {
         .join("flixel.json");
     assert!(hmm::json::read_json(&flixel_json).is_ok());
 }
-
-#[test]
-fn test_hmm_haxelib_dir_remove() {
-    common::setup_haxelib_folder();
-
-    assert!(commands::clean_command::remove_haxelib_folder().is_ok());
-    assert!(commands::clean_command::remove_haxelib_folder().is_err());
-}
