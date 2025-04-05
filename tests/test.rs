@@ -1,19 +1,41 @@
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 
-use hmm_rs::{commands::*, hmm};
+use common::{remove_haxelib_folder, setup_haxelib_folder};
+use hmm_rs::{
+    commands::{self, *},
+    hmm,
+};
 mod common;
 
 #[test]
-fn test_create_and_clean_haxelib_folder() {
+fn test_clean_haxelib_folder() {
+    common::setup_haxelib_folder();
+    assert!(clean_command::remove_haxelib_folder().is_ok());
     assert!(clean_command::remove_haxelib_folder().is_err());
+}
+
+#[test]
+fn test_create_haxelib_folder() {
+    remove_haxelib_folder();
     assert!(init_command::create_haxelib_folder().is_ok());
     assert!(init_command::create_haxelib_folder().is_err());
-    assert!(clean_command::remove_haxelib_folder().is_ok());
+
+    remove_haxelib_folder();
 }
 
 #[test]
 fn test_hmm_json_read() {
     // common::setup();
-    let flixel_json = format!("{}/flixel.json", common::get_samples_dir());
-    assert!(hmm::json::read_json(flixel_json.as_str()).is_ok());
+    let flixel_json = PathBuf::new()
+        .join(common::get_samples_dir())
+        .join("flixel.json");
+    assert!(hmm::json::read_json(&flixel_json).is_ok());
+}
+
+#[test]
+fn test_hmm_haxelib_dir_remove() {
+    common::setup_haxelib_folder();
+
+    assert!(commands::clean_command::remove_haxelib_folder().is_ok());
+    assert!(commands::clean_command::remove_haxelib_folder().is_err());
 }
