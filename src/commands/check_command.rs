@@ -11,6 +11,8 @@ use yansi::Paint;
 pub struct HaxelibStatus<'a> {
     pub lib: &'a Haxelib,
     pub install_type: InstallType,
+    pub wants: Option<String>,
+    pub installed: Option<String>,
 }
 
 // First, define the install type enum
@@ -24,8 +26,18 @@ pub enum InstallType {
 }
 
 impl<'a> HaxelibStatus<'a> {
-    pub fn new(lib: &'a Haxelib, install_type: InstallType) -> Self {
-        Self { lib, install_type }
+    pub fn new(
+        lib: &'a Haxelib,
+        install_type: InstallType,
+        wants: Option<String>,
+        installed: Option<String>,
+    ) -> Self {
+        Self {
+            lib,
+            install_type,
+            wants,
+            installed,
+        }
     }
 }
 
@@ -49,7 +61,10 @@ pub fn compare_haxelib_to_hmm(deps: &Dependancies) -> Result<Vec<HaxelibStatus>>
     let mut install_status = Vec::new();
 
     for haxelib in deps.dependencies.iter() {
-        install_status.push(check_dependency(haxelib)?);
+        let haxelib_status = check_dependency(haxelib)?;
+        print_install_status(&haxelib_status)?;
+
+        install_status.push(haxelib_status);
         continue;
     }
 
@@ -67,7 +82,12 @@ fn check_dependency(haxelib: &Haxelib) -> Result<HaxelibStatus> {
         let err_message = format!("{} not installed", haxelib.name);
         println!("{}", err_message.red());
 
-        return Ok(HaxelibStatus::new(haxelib, InstallType::Missing));
+        return Ok(HaxelibStatus::new(
+            haxelib,
+            InstallType::Missing,
+            None,
+            None,
+        ));
     }
 
     // Read the .current file
@@ -86,47 +106,37 @@ fn check_dependency(haxelib: &Haxelib) -> Result<HaxelibStatus> {
     match haxelib.haxelib_type {
         HaxelibType::Haxelib => {
             if haxelib.version.as_ref().unwrap() != &current_version {
-                println!(
-                    "{} {}",
-                    haxelib.name.red().bold(),
-                    "is not at the correct version".red()
-                );
-                println!(
-                    "Expected: {} | Installed: {}",
-                    haxelib.version.as_ref().unwrap().red(),
-                    current_version.red()
-                );
-
-                return Ok(HaxelibStatus::new(haxelib, InstallType::Outdated));
+                return Ok(HaxelibStatus::new(
+                    haxelib,
+                    InstallType::Outdated,
+                    Some(haxelib.version.as_ref().unwrap().to_string()),
+                    Some(current_version.to_string()),
+                ));
             }
         }
         HaxelibType::Git => {
             let repo_path = lib_path.join("git");
 
             if !repo_path.exists() {
-                println!(
-                    "{} {}",
-                    haxelib.name.red().bold(),
-                    "is not cloned / installed (via git)".red()
-                );
-                println!(
-                    "Expected: {} | Installed: {}",
-                    haxelib.vcs_ref.as_ref().unwrap().red(),
-                    "None".red()
-                );
-                return Ok(HaxelibStatus::new(haxelib, InstallType::MissingGit));
+                return Ok(HaxelibStatus::new(
+                    haxelib,
+                    InstallType::MissingGit,
+                    haxelib.vcs_ref.clone(),
+                    None,
+                ));
             }
 
             let repo = match gix::discover(&repo_path) {
                 Ok(r) => r,
                 Err(e) => {
                     println!("{}", e.to_string().red());
-                    println!(
-                        "Expected: {} | Installed: {}",
-                        haxelib.vcs_ref.as_ref().unwrap().red(),
-                        "None".red()
-                    );
-                    return Ok(HaxelibStatus::new(haxelib, InstallType::Missing));
+
+                    return Ok(HaxelibStatus::new(
+                        haxelib,
+                        InstallType::Missing,
+                        haxelib.vcs_ref.clone(),
+                        None,
+                    ));
                 }
             };
 
@@ -146,29 +156,21 @@ fn check_dependency(haxelib: &Haxelib) -> Result<HaxelibStatus> {
                 .cmp_oid(intended_commit.as_oid())
                 .is_ne()
             {
-                println!(
-                    "{} {}",
-                    haxelib.name.red().bold(),
-                    "is not at the correct version".red()
-                );
-
-                println!(
-                    "Expected: {} | Installed: {} at {}",
-                    haxelib.vcs_ref.as_ref().unwrap().red(),
-                    head_ref.id().shorten_or_id().red(),
-                    head_ref.id().red()
-                );
-
-                return Ok(HaxelibStatus::new(haxelib, InstallType::Outdated));
+                return Ok(HaxelibStatus::new(
+                    haxelib,
+                    InstallType::Outdated,
+                    Some(haxelib.vcs_ref.clone().unwrap()),
+                    Some(head_ref.id().to_string()),
+                ));
             }
 
             if repo.is_dirty()? {
-                println!(
-                    "{} {}",
-                    haxelib.name.red().bold(),
-                    "has local changes".red()
-                );
-                return Ok(HaxelibStatus::new(haxelib, InstallType::Conflict));
+                return Ok(HaxelibStatus::new(
+                    haxelib,
+                    InstallType::Conflict,
+                    None,
+                    None,
+                ));
             }
 
             // we have a correct version, so we're going to update the current_version to to the vcs_ref
@@ -186,5 +188,62 @@ fn check_dependency(haxelib: &Haxelib) -> Result<HaxelibStatus> {
     );
     print!("\x1B[1A\x1B[2K{}", inner.bright_green().wrap());
     println!();
-    Ok(HaxelibStatus::new(haxelib, InstallType::AlreadyInstalled))
+    Ok(HaxelibStatus::new(
+        haxelib,
+        InstallType::AlreadyInstalled,
+        None,
+        None,
+    ))
+}
+
+fn print_install_status(haxelib_status: &HaxelibStatus) -> Result<()> {
+    match haxelib_status.install_type {
+        InstallType::Missing => {
+            println!(
+                "{} {}",
+                haxelib_status.lib.name.red().bold(),
+                "is not installed".red()
+            );
+            println!(
+                "Expected: {} | Installed: {}",
+                haxelib_status.wants.as_ref().unwrap().red(),
+                "None".red()
+            );
+        }
+        InstallType::MissingGit => {
+            println!(
+                "{} {}",
+                haxelib_status.lib.name.red().bold(),
+                "is not cloned / installed (via git)".red()
+            );
+            println!(
+                "Expected: {} | Installed: {}",
+                haxelib_status.wants.as_ref().unwrap().red(),
+                "None".red()
+            );
+        }
+        InstallType::Outdated => {
+            println!(
+                "{} {}",
+                haxelib_status.lib.name.red().bold(),
+                "is not at the correct version".red()
+            );
+            println!(
+                "Expected: {} | Installed: {}",
+                haxelib_status.wants.as_ref().unwrap().red(),
+                haxelib_status.installed.as_ref().unwrap().red()
+            );
+        }
+        InstallType::AlreadyInstalled => {
+            // Already installed, do nothing
+        }
+        InstallType::Conflict => {
+            println!(
+                "{} {}",
+                haxelib_status.lib.name.red().bold(),
+                "has local changes".red()
+            );
+        }
+    }
+    Ok(())
 }
