@@ -6,9 +6,13 @@ use std::path::PathBuf;
 use anyhow::{Ok, Result};
 
 use clap::{Parser, Subcommand};
+use shadow_rs::shadow;
+
+shadow!(build);
 
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
+#[command(version = build::CLAP_LONG_VERSION)]
 struct Cli {
     #[command(subcommand)]
     cmd: Commands,
