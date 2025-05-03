@@ -79,13 +79,10 @@ fn check_dependency(haxelib: &Haxelib) -> Result<HaxelibStatus> {
     // assumes an error will occur, and if not, this line will be rewritten at the end of the for loop
     println!("{} {}", haxelib.name.bold().red(), Emoji("❌", "[X]"));
     if !lib_path.exists() {
-        let err_message = format!("{} not installed", haxelib.name);
-        println!("{}", err_message.red());
-
         return Ok(HaxelibStatus::new(
             haxelib,
             InstallType::Missing,
-            None,
+            get_wants(haxelib),
             None,
         ));
     }
@@ -109,7 +106,7 @@ fn check_dependency(haxelib: &Haxelib) -> Result<HaxelibStatus> {
                 return Ok(HaxelibStatus::new(
                     haxelib,
                     InstallType::Outdated,
-                    Some(haxelib.version.as_ref().unwrap().to_string()),
+                    get_wants(haxelib),
                     Some(current_version.to_string()),
                 ));
             }
@@ -121,7 +118,7 @@ fn check_dependency(haxelib: &Haxelib) -> Result<HaxelibStatus> {
                 return Ok(HaxelibStatus::new(
                     haxelib,
                     InstallType::MissingGit,
-                    haxelib.vcs_ref.clone(),
+                    get_wants(haxelib),
                     None,
                 ));
             }
@@ -134,7 +131,7 @@ fn check_dependency(haxelib: &Haxelib) -> Result<HaxelibStatus> {
                     return Ok(HaxelibStatus::new(
                         haxelib,
                         InstallType::Missing,
-                        haxelib.vcs_ref.clone(),
+                        get_wants(haxelib),
                         None,
                     ));
                 }
@@ -159,7 +156,7 @@ fn check_dependency(haxelib: &Haxelib) -> Result<HaxelibStatus> {
                 return Ok(HaxelibStatus::new(
                     haxelib,
                     InstallType::Outdated,
-                    Some(haxelib.vcs_ref.clone().unwrap()),
+                    get_wants(haxelib),
                     Some(head_ref.id().to_string()),
                 ));
             }
@@ -168,7 +165,7 @@ fn check_dependency(haxelib: &Haxelib) -> Result<HaxelibStatus> {
                 return Ok(HaxelibStatus::new(
                     haxelib,
                     InstallType::Conflict,
-                    None,
+                    get_wants(haxelib),
                     None,
                 ));
             }
@@ -246,4 +243,12 @@ fn print_install_status(haxelib_status: &HaxelibStatus) -> Result<()> {
         }
     }
     Ok(())
+}
+
+fn get_wants(haxelib: &Haxelib) -> Option<String> {
+    match haxelib.haxelib_type {
+        HaxelibType::Haxelib => haxelib.version.clone(),
+        HaxelibType::Git => haxelib.vcs_ref.clone(),
+        _ => None,
+    }
 }

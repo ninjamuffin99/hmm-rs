@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct Haxelib {
     pub name: String,
     #[serde(rename = "type")]
@@ -15,7 +15,7 @@ pub struct Haxelib {
     pub version: Option<String>,
 }
 
-#[derive(Serialize, Deserialize, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
 pub enum HaxelibType {
     #[serde(rename = "git")]
     Git,
