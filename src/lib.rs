@@ -70,17 +70,17 @@ pub fn run() -> Result<()> {
     let args = Cli::parse();
 
     let path = args.json.unwrap();
-    let deps = hmm::json::read_json(&path)?;
+    let load_deps = || hmm::json::read_json(&path);
 
     match args.cmd {
         Commands::List { lib } => hmm::json::read_json(&path)?.print_string_list(&lib)?,
         Commands::Init => commands::init_command::init_hmm()?,
         Commands::Clean => commands::clean_command::remove_haxelib_folder()?,
-        Commands::ToHxml { hxml } => commands::tohxml_command::dump_to_hxml(&deps, hxml)?,
-        Commands::Check => commands::check_command::check(&deps)?,
-        Commands::Install => commands::install_command::install_from_hmm(&deps)?,
+        Commands::ToHxml { hxml } => commands::tohxml_command::dump_to_hxml(&load_deps()?, hxml)?,
+        Commands::Check => commands::check_command::check(&load_deps()?)?,
+        Commands::Install => commands::install_command::install_from_hmm(&load_deps()?)?,
         Commands::Haxelib { name, version } => {
-            commands::haxelib_command::install_haxelib(&name, &version, deps, path)?
+            commands::haxelib_command::install_haxelib(&name, &version, load_deps()?, path)?
         }
         Commands::Remove { lib: _ } => commands::remove_command::remove_haxelibs()?,
     }
