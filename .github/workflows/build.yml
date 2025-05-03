@@ -1,9 +1,9 @@
 name: Build & Test hmm-rs (cargo)
 on:
   push:
-    branches: [ "main" ]
+    branches: ["main"]
   pull_request:
-    branches: [ "main" ]
+    branches: ["main"]
 
 env:
   CARGO_TERM_COLOR: always
@@ -34,7 +34,7 @@ jobs:
           mkdir -p hmm-rs-${{ matrix.target }}
           cp target/${{ matrix.target }}/debug/hmm-rs.exe ./hmm-rs-${{ matrix.target }}/hmm-rs.exe
       - name: Upload artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: hmm-rs-${{ matrix.target }}
           path: hmm-rs-${{ matrix.target }}
