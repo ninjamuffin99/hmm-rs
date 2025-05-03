@@ -245,10 +245,39 @@ fn print_install_status(haxelib_status: &HaxelibStatus) -> Result<()> {
     Ok(())
 }
 
+/// Returns either the haxelib version or the git ref of the haxelib
 fn get_wants(haxelib: &Haxelib) -> Option<String> {
     match haxelib.haxelib_type {
         HaxelibType::Haxelib => haxelib.version.clone(),
         HaxelibType::Git => haxelib.vcs_ref.clone(),
         _ => None,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_get_wants() {
+        let haxelib = Haxelib {
+            name: "test".to_string(),
+            haxelib_type: HaxelibType::Haxelib,
+            vcs_ref: None,
+            dir: None,
+            url: None,
+            version: Some("1.0.0".to_string()),
+        };
+        assert_eq!(get_wants(&haxelib), Some("1.0.0".to_string()));
+
+        let haxelib = Haxelib {
+            name: "test".to_string(),
+            haxelib_type: HaxelibType::Git,
+            vcs_ref: Some("master".to_string()),
+            dir: None,
+            url: None,
+            version: None,
+        };
+        assert_eq!(get_wants(&haxelib), Some("master".to_string()));
     }
 }
