@@ -1,7 +1,7 @@
 use std::{fs::File, path::Path};
 
 use crate::hmm::dependencies::Dependancies;
-use crate::hmm::haxelib::{Haxelib, HaxelibType};
+use crate::hmm::haxelib::{self, Haxelib, HaxelibType};
 use anyhow::{anyhow, Context, Result};
 use console::Emoji;
 use gix::hash::Prefix;
@@ -49,8 +49,9 @@ pub fn check(deps: &Dependancies) -> Result<()> {
                 installs
                     .iter()
                     .filter(|i| i.install_type == InstallType::AlreadyInstalled)
-                    .count(),
-                deps.dependencies.len()
+                    .count()
+                    .bold(),
+                deps.dependencies.len().bold()
             );
         }
     }
@@ -77,7 +78,11 @@ fn check_dependency(haxelib: &Haxelib) -> Result<HaxelibStatus> {
     let lib_path = Path::new(".haxelib").join(comma_replace.as_str());
 
     // assumes an error will occur, and if not, this line will be rewritten at the end of the for loop
-    println!("{} {}", haxelib.name.bold().red(), Emoji("❌", "[X]"));
+    println!(
+        "Checking {} {}",
+        haxelib.name.bold().yellow(),
+        Emoji("🤔", "[...]")
+    );
     if !lib_path.exists() {
         return Ok(HaxelibStatus::new(
             haxelib,
@@ -176,24 +181,17 @@ fn check_dependency(haxelib: &Haxelib) -> Result<HaxelibStatus> {
         _ => {}
     }
 
-    let inner = format!(
-        "{} [{:?}]: {} {}",
-        haxelib.name.green().bold(),
-        haxelib.haxelib_type.green().bold(),
-        current_version.bright_green(),
-        Emoji("✅", "[✔️]")
-    );
-    print!("\x1B[1A\x1B[2K{}", inner.bright_green().wrap());
-    println!();
     Ok(HaxelibStatus::new(
         haxelib,
         InstallType::AlreadyInstalled,
-        None,
+        Some(current_version),
         None,
     ))
 }
 
 fn print_install_status(haxelib_status: &HaxelibStatus) -> Result<()> {
+    // Clears the terminal
+    print!("\x1B[1A\x1B[2K");
     match haxelib_status.install_type {
         InstallType::Missing => {
             println!(
@@ -232,7 +230,14 @@ fn print_install_status(haxelib_status: &HaxelibStatus) -> Result<()> {
             );
         }
         InstallType::AlreadyInstalled => {
-            // Already installed, do nothing
+            let inner = format!(
+                "{} [{:?}]: {} {}",
+                haxelib_status.lib.name.green().bold(),
+                haxelib_status.lib.haxelib_type.green().dim(),
+                haxelib_status.wants.as_ref().unwrap().green().dim(),
+                Emoji("✅", "[✔️]")
+            );
+            println!("{}", inner.bright_green().wrap());
         }
         InstallType::Conflict => {
             println!(
