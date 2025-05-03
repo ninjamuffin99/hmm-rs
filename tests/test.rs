@@ -2,7 +2,7 @@ use std::path::PathBuf;
 
 use common::remove_haxelib_folder;
 use hmm_rs::{
-    commands::{self, *},
+    commands::{*},
     hmm,
 };
 mod common;
