@@ -96,17 +96,14 @@ pub fn install_from_git_using_gix_clone(haxelib: &Haxelib) -> Result<()> {
 
     clone_path = clone_path.join("git");
 
-    match std::fs::create_dir_all(&clone_path) {
-        core::result::Result::Ok(_) => println!("Created directory: {:?}", clone_path.as_path()),
-        Err(e) => {
-            if e.kind() == std::io::ErrorKind::AlreadyExists {
-                println!("Directory already exists: {:?}", clone_path.as_path());
-            } else {
-                return Err(anyhow!(
-                    "Error creating directory: {:?}",
-                    clone_path.as_path()
-                ));
-            }
+    if let Err(e) = std::fs::create_dir_all(&clone_path) {
+        if e.kind() == std::io::ErrorKind::AlreadyExists {
+            println!("Directory already exists: {:?}", clone_path.as_path());
+        } else {
+            return Err(anyhow!(
+                "Error creating directory: {:?}",
+                clone_path.as_path()
+            ));
         }
     };
 
@@ -161,11 +158,9 @@ pub async fn install_from_haxelib(haxelib: &Haxelib) -> Result<()> {
     let client = reqwest::Client::new();
 
     let tmp_dir = env::temp_dir().join(format!("{}.zip", haxelib.name));
-    println!("Temp directory: {:?}", tmp_dir.bold());
 
     let response = client.get(target_url).send().await?;
     let total_size = response.content_length().unwrap();
-    println!("Size: {}", human_bytes(total_size as f64));
     // yoinked from haxeget !
     let pb = ProgressBar::new(total_size);
     pb.set_style(ProgressStyle::with_template("{msg}\n{spinner:.green} [{elapsed_precise}] [{wide_bar:.yellow/red}] {bytes}/{total_bytes} ({bytes_per_sec}, {eta})")
@@ -176,8 +171,8 @@ pub async fn install_from_haxelib(haxelib: &Haxelib) -> Result<()> {
     let mut stream = response.bytes_stream();
 
     while let Some(item) = stream.next().await {
-        let chunk = item.unwrap();
-        file.write_all(&chunk).unwrap();
+        let chunk = item?;
+        file.write_all(&chunk)?;
         let new = std::cmp::min(downloaded + (chunk.len() as u64), total_size);
         downloaded = new;
         pb.set_position(new);
@@ -194,30 +189,21 @@ pub async fn install_from_haxelib(haxelib: &Haxelib) -> Result<()> {
     let version_as_commas = haxelib.version.as_ref().unwrap().replace(".", ",");
     let mut output_dir: PathBuf = [".haxelib", haxelib.name.as_str()].iter().collect();
 
-    match std::fs::create_dir(&output_dir) {
-        core::result::Result::Ok(_) => println!("Created directory: {:?}", output_dir.as_path()),
-        Err(e) => {
-            if e.kind() == std::io::ErrorKind::AlreadyExists {
-                println!("Directory already exists: {:?}", output_dir.as_path());
-            } else {
-                return Err(anyhow!(
-                    "Error creating directory: {:?}",
-                    output_dir.as_path()
-                ));
-            }
+    if let Err(e) = std::fs::create_dir(&output_dir) {
+        if e.kind() == std::io::ErrorKind::AlreadyExists {
+            println!("Directory already exists: {:?}", output_dir.as_path());
+        } else {
+            return Err(anyhow!(
+                "Error creating directory: {:?}",
+                output_dir.as_path()
+            ));
         }
     }
-    // .current file
-    println!(
-        "Writing .current file to version: {:?}",
-        haxelib.version.as_ref().unwrap().as_str()
-    );
 
     create_current_file(&output_dir, haxelib.version.as_ref().unwrap())?;
 
     // unzipping
     output_dir = output_dir.join(version_as_commas.as_str());
-    println!("Unzipping to: {:?}", output_dir.as_path());
 
     let archive = File::open(tmp_dir.as_path())?;
     let mut zip_file = ZipArchive::new(archive).context("Error opening zip file")?;
@@ -225,8 +211,6 @@ pub async fn install_from_haxelib(haxelib: &Haxelib) -> Result<()> {
         .extract(output_dir.as_path())
         .context("Error extracting zip file")?;
 
-    // removing the zip file
-    print!("Deleting temp file: {:?}", tmp_dir.as_path());
     std::fs::remove_file(tmp_dir.as_path())?;
     println!();
     println!(

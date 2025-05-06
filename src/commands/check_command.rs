@@ -99,11 +99,17 @@ fn check_dependency(haxelib: &Haxelib) -> Result<HaxelibStatus> {
     };
     // println!("Checking version at {}", current_file.display());
     let mut current_version = String::new();
-    File::read_to_string(
-        &mut File::open(&current_file).context(anyhow!("Could not open {:?}", current_file))?,
-        &mut current_version,
-    )?;
-    // println!("Current version: {}", current_version);
+    match File::open(&current_file) {
+        Ok(mut f) => f.read_to_string(&mut current_version)?,
+        _ => {
+            return Ok(HaxelibStatus::new(
+                haxelib,
+                InstallType::Missing,
+                get_wants(haxelib),
+                None,
+            ));
+        }
+    };
 
     match haxelib.haxelib_type {
         HaxelibType::Haxelib => {
