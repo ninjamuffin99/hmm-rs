@@ -23,6 +23,7 @@ pub enum InstallType {
     Outdated,         // Installed but wrong version
     AlreadyInstalled, // Correctly installed
     Conflict,         // Version conflicts between dependencies
+    NotLocked,        // Version in hmm.json isn't locked to anything, prompt to lock?
 }
 
 impl<'a> HaxelibStatus<'a> {
@@ -112,16 +113,26 @@ fn check_dependency(haxelib: &Haxelib) -> Result<HaxelibStatus> {
     };
 
     match haxelib.haxelib_type {
-        HaxelibType::Haxelib => {
-            if haxelib.version.as_ref().unwrap() != &current_version {
+        HaxelibType::Haxelib => match haxelib.version.as_ref() {
+            Some(v) => {
+                if v != &current_version {
+                    return Ok(HaxelibStatus::new(
+                        haxelib,
+                        InstallType::Outdated,
+                        get_wants(haxelib),
+                        Some(current_version.to_string()),
+                    ));
+                }
+            }
+            None => {
                 return Ok(HaxelibStatus::new(
                     haxelib,
-                    InstallType::Outdated,
-                    get_wants(haxelib),
+                    InstallType::NotLocked,
+                    None,
                     Some(current_version.to_string()),
-                ));
+                ))
             }
-        }
+        },
         HaxelibType::Git => {
             let repo_path = lib_path.join("git");
 
@@ -251,6 +262,18 @@ fn print_install_status(haxelib_status: &HaxelibStatus) -> Result<()> {
                 haxelib_status.lib.name.red().bold(),
                 "has local changes".red()
             );
+        }
+        InstallType::NotLocked => {
+            println!(
+                "{} {}",
+                haxelib_status.lib.name.yellow().bold(),
+                "is not locked to a specific version (`\"version\": null` in json file). ".yellow(),
+            );
+            println!(
+                "{} {}",
+                "`hmm lock` to version:".yellow().bright(),
+                haxelib_status.installed.as_ref().unwrap().yellow()
+            )
         }
     }
     Ok(())
